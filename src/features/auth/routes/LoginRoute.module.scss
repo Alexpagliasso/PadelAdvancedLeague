@@ -23,9 +23,9 @@
 
 .input {
   width: 100%;
-  border: 1px solid #cedbd5;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-text);
   padding: 0.75rem 0.875rem;
 }
@@ -33,10 +33,18 @@
 .button {
   border: 0;
   border-radius: 0.5rem;
-  background: #0b1f1a;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--pad-navy-dark);
   cursor: pointer;
+  font-weight: 800;
   padding: 0.8rem 1rem;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  color: var(--pad-navy-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
 }
 
 .button:disabled {
@@ -45,6 +53,6 @@
 }
 
 .error {
-  color: #a02525;
+  color: var(--color-danger-text);
   font-size: 0.875rem;
 }

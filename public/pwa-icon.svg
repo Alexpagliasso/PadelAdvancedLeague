@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Padel Advanced League">
-  <rect width="512" height="512" rx="112" fill="#0b1f1a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PAD - Padel And Drink">
+  <rect width="512" height="512" rx="112" fill="#061A4D"/>
   <circle cx="194" cy="210" r="86" fill="#e9f7ef"/>
-  <circle cx="318" cy="302" r="86" fill="#62d084"/>
-  <path d="M171 348 341 164" stroke="#f7faf8" stroke-width="42" stroke-linecap="round"/>
+  <circle cx="318" cy="302" r="86" fill="#FF7A00"/>
+  <path d="M171 348 341 164" stroke="#F5F7FA" stroke-width="42" stroke-linecap="round"/>
 </svg>

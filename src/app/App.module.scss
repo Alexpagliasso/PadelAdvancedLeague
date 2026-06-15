@@ -1,6 +1,6 @@
 .appShell {
   min-height: 100dvh;
-  background: var(--color-surface);
+  background: var(--color-page);
   color: var(--color-text);
 }
 
@@ -10,6 +10,12 @@
   min-height: 100dvh;
   place-items: center;
   padding: 2rem;
+}
+
+.routeLogo {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
 }
 
 .routeMessage {
@@ -23,8 +29,15 @@
 .routeAction {
   border: 0;
   border-radius: 0.5rem;
-  background: #0b1f1a;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--pad-navy-dark);
   cursor: pointer;
+  font-weight: 800;
   padding: 0.75rem 1rem;
+}
+
+.routeAction:hover {
+  background: var(--color-accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
 }

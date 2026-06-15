@@ -1,20 +1,64 @@
-import styles from '@/features/admin/routes/AdminPlaceholderRoute.module.scss';
+import { usePublicTournamentQuery } from '@/features/public/api/publicTournamentQueries';
+import { PublicTournamentView } from '@/features/public/routes/PublicTournamentRoute';
+
+import styles from '@/features/admin/routes/AdminDashboardRoute.module.scss';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Unexpected error.';
+}
 
 export function AdminDashboardRoute() {
-  return (
-    <section className={styles.page}>
-      <header className={styles.header}>
-        <p className={styles.eyebrow}>Admin</p>
-        <h1 className={styles.title}>Dashboard</h1>
-      </header>
+  const tournamentQuery = usePublicTournamentQuery(null);
+  const data = tournamentQuery.data ?? null;
 
-      <div className={styles.panel}>
-        <h2 className={styles.panelTitle}>Struttura admin pronta</h2>
-        <p className={styles.muted}>
-          Usa il menu laterale per gestire tornei e stagioni. Le altre sezioni sono predisposte
-          per i prossimi moduli.
-        </p>
-      </div>
-    </section>
+  if (tournamentQuery.isLoading) {
+    return (
+      <section className={styles.page}>
+        <p className={styles.muted}>Caricamento anteprima...</p>
+      </section>
+    );
+  }
+
+  if (tournamentQuery.isError) {
+    return (
+      <section className={styles.page}>
+        <p className={styles.error}>{getErrorMessage(tournamentQuery.error)}</p>
+      </section>
+    );
+  }
+
+  if (!data) {
+    return (
+      <section className={styles.page}>
+        <header className={styles.previewHeader}>
+          <div>
+            <p className={styles.eyebrow}>Admin</p>
+            <h1>Anteprima torneo attivo</h1>
+          </div>
+        </header>
+        <div className={styles.emptyPanel}>
+          <p>Nessun torneo pubblico attivo da mostrare.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <PublicTournamentView
+      data={data}
+      header={
+        <header className={styles.previewHeader}>
+          <div>
+            <p className={styles.eyebrow}>Admin</p>
+            <h1>Anteprima torneo attivo</h1>
+            <span>{data.tournament.name}</span>
+          </div>
+        </header>
+      }
+    />
   );
 }

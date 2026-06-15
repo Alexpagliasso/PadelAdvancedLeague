@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useState } from 'react';
+import { type SyntheticEvent, useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
@@ -20,6 +20,10 @@ export function LoginRoute() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = 'PAD | Login';
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to={isAdmin ? appPaths.admin : appPaths.profile} replace />;

@@ -7,22 +7,22 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['assets/brand/pad-logo.png'],
       manifest: {
-        name: 'Padel Advanced League',
-        short_name: 'Padel League',
-        description: 'PWA per la gestione di tornei di padel.',
-        theme_color: '#0b1f1a',
-        background_color: '#f7faf8',
+        name: 'PAD - Padel And Drink',
+        short_name: 'PAD',
+        description: 'PWA per tornei di padel firmata Padel And Drink.',
+        theme_color: '#061A4D',
+        background_color: '#F4F8FC',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
         icons: [
           {
-            src: '/pwa-icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: '/assets/brand/pad-logo.png',
+            sizes: '512x512',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]

@@ -1,59 +1,84 @@
 .page {
   min-height: 100dvh;
-  background: var(--color-surface);
+  background: var(--color-page);
   color: var(--color-text);
 }
 
 .hero {
   display: grid;
-  gap: 1.25rem;
-  background: #0b1f1a;
-  color: #ffffff;
-  padding: 1rem 1rem 1.35rem;
+  position: relative;
+  gap: 1rem;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  padding: 1rem 1rem 1.8rem;
 }
 
 .nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   margin: 0 auto;
   width: 100%;
   max-width: 72rem;
 }
 
+.nav strong {
+  color: var(--pad-surface);
+}
+
 .adminLink {
-  border: 1px solid currentcolor;
+  border: 1px solid rgb(255 255 255 / 70%);
   border-radius: 0.5rem;
-  color: inherit;
+  color: var(--pad-surface);
   padding: 0.55rem 0.75rem;
   text-decoration: none;
 }
 
+.adminLink:hover {
+  border-color: var(--pad-blue-soft);
+  background: rgb(56 189 248 / 14%);
+  color: var(--pad-surface);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
 .heroContent {
   display: grid;
-  gap: 0.55rem;
+  justify-items: center;
+  gap: 0.7rem;
   margin: 0 auto;
   width: 100%;
   max-width: 72rem;
+  padding-top: 0.25rem;
+  text-align: center;
+}
+
+.heroLogo {
+  width: clamp(5.5rem, 28vw, 7rem);
+  height: auto;
+  margin-bottom: 0.45rem;
+  object-fit: contain;
 }
 
 .heroContent h1 {
+  color: var(--pad-surface);
   margin: 0;
-  font-size: clamp(2rem, 9vw, 3.75rem);
-  line-height: 1;
+  font-size: clamp(1.65rem, 7vw, 2.6rem);
+  line-height: 1.08;
 }
 
 .heroContent p {
   max-width: 42rem;
   margin: 0;
-  color: rgb(255 255 255 / 78%);
+  color: rgb(255 255 255 / 86%);
   line-height: 1.55;
 }
 
 .eyebrow {
-  color: rgb(255 255 255 / 70%);
+  color: var(--pad-blue-soft);
   font-size: 0.8rem;
+  font-weight: 800;
   text-transform: uppercase;
 }
 
@@ -69,9 +94,9 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(max-content, 1fr));
   overflow-x: auto;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .tabButton {
@@ -85,8 +110,20 @@
 }
 
 .tabButtonActive {
-  background: #0b1f1a;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.tabButton:hover {
+  background: var(--pad-blue-soft);
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.tabButtonActive:hover {
+  background: var(--color-primary-hover);
+  color: var(--color-surface);
 }
 
 .section {
@@ -122,9 +159,9 @@
   grid-template-columns: auto minmax(0, 1fr) repeat(2, auto);
   gap: 0.45rem 0.7rem;
   align-items: center;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 0.8rem;
 }
 
@@ -142,8 +179,8 @@
   width: 1.8rem;
   height: 1.8rem;
   border-radius: 999px;
-  background: #eaf5ef;
-  color: #0b1f1a;
+  background: var(--pad-blue-soft);
+  color: var(--color-primary);
   font-weight: 800;
   place-items: center;
 }
@@ -155,13 +192,14 @@
 
 .accordionItem {
   overflow: hidden;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--pad-blue-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .accordionItemOpen {
-  border-color: #83b99b;
+  border-color: var(--pad-orange-border);
+  box-shadow: inset 4px 0 0 var(--pad-orange);
 }
 
 .accordionHeader {
@@ -171,15 +209,27 @@
   gap: 0.75rem;
   width: 100%;
   border: 0;
-  background: transparent;
-  color: var(--color-text);
+  background: var(--pad-blue-soft);
+  color: var(--pad-navy);
   cursor: pointer;
   padding: 0.8rem;
   text-align: left;
 }
 
+.accordionHeader:hover {
+  background: var(--pad-blue-soft-strong);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18rem;
+}
+
 .accordionItemOpen .accordionHeader {
-  background: #eaf5ef;
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy);
+}
+
+.accordionItemOpen .accordionHeader:hover {
+  background: var(--pad-orange-soft-strong);
 }
 
 .teamIdentity {
@@ -207,9 +257,9 @@
 .avatarFallback {
   width: 1.7rem;
   height: 1.7rem;
-  border: 1px solid #b7cbc1;
+  border: 1px solid var(--pad-orange-border);
   border-radius: 50%;
-  background: #eaf5ef;
+  background: var(--pad-blue-soft);
   flex: 0 0 auto;
 }
 
@@ -229,7 +279,7 @@
   width: 0.48rem;
   height: 0.48rem;
   border-radius: 999px;
-  background: #0b1f1a;
+  background: var(--pad-navy);
   content: '';
   transform: translateX(-50%);
 }
@@ -241,7 +291,7 @@
   left: 0.42rem;
   height: 0.48rem;
   border-radius: 999px 999px 0.25rem 0.25rem;
-  background: #0b1f1a;
+  background: var(--pad-navy);
   content: '';
 }
 
@@ -261,7 +311,7 @@
 }
 
 .teamStats small {
-  color: var(--color-muted);
+  color: var(--pad-navy);
   font-size: 0.75rem;
 }
 
@@ -292,15 +342,30 @@
 .matchCard {
   display: grid;
   gap: 0.55rem;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 0.85rem;
 }
 
-.matchCardPlayed {
-  border-color: #83b99b;
-  background: #f2faf5;
+.matchCard_scheduled {
+  border-color: var(--pad-border);
+  background: var(--pad-surface);
+}
+
+.matchCard_played {
+  border-color: var(--pad-blue-border);
+  background: var(--pad-blue-soft);
+}
+
+.matchCard_postponed {
+  border-color: var(--pad-orange-border);
+  background: var(--pad-orange-soft);
+}
+
+.matchCard_cancelled {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
 }
 
 .matchCard span,
@@ -347,31 +412,31 @@
 }
 
 .badge_scheduled {
-  background: #eef3f0;
-  color: #47524d;
+  background: var(--pad-blue-soft);
+  color: var(--pad-navy);
 }
 
 .badge_played {
-  background: #d8efe2;
-  color: #0b5a32;
+  background: var(--pad-blue-soft-strong);
+  color: var(--pad-navy);
 }
 
 .badge_postponed {
-  background: #fff1c7;
-  color: #715200;
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy);
 }
 
 .badge_cancelled {
-  background: #f8d7da;
-  color: #842029;
+  background: #e2e8f0;
+  color: var(--pad-text);
 }
 
 .tableWrap {
   display: none;
   overflow-x: auto;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .table {
@@ -383,7 +448,7 @@
 
 .table th,
 .table td {
-  border-bottom: 1px solid #edf2ef;
+  border-bottom: 1px solid var(--color-border);
   padding: 0.75rem;
   text-align: left;
 }
@@ -407,13 +472,18 @@
 }
 
 .error {
-  color: #a02525;
+  color: var(--color-danger-text);
   padding: 1rem;
 }
 
 @media (min-width: 760px) {
   .hero {
     padding: 1.25rem 1.5rem 2.5rem;
+  }
+
+  .heroLogo {
+    width: clamp(7.5rem, 12vw, 10rem);
+    margin-bottom: 0.7rem;
   }
 
   .content {

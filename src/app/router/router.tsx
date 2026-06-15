@@ -35,7 +35,8 @@ function BootstrapRoute() {
 
   return (
     <section className={styles.routeFrame}>
-      <p className={styles.routeMessage}>Frontend bootstrap ready.</p>
+      <img className={styles.routeLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
+      <p className={styles.routeMessage}>PAD - Padel And Drink</p>
       <button
         className={styles.routeAction}
         onClick={() => {

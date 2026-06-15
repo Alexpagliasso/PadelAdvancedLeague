@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
 import type { MatchWithSets } from '@/features/matches/api/matchesApi';
-import type { PublicPlayer, PublicTeam } from '@/features/public/api/publicTournamentApi';
+import type {
+  PublicPlayer,
+  PublicTeam,
+  PublicTournamentData
+} from '@/features/public/api/publicTournamentApi';
 import { usePublicTournamentQuery } from '@/features/public/api/publicTournamentQueries';
 import { calculateStandings } from '@/features/standings/lib/standingsEngine';
 
@@ -131,41 +135,10 @@ export function PublicTournamentRoute() {
   const params = useParams<{ slug?: string }>();
   const tournamentQuery = usePublicTournamentQuery(params.slug ?? null);
   const data = tournamentQuery.data ?? null;
-  const [activeTab, setActiveTab] = useState<PublicTab>('standings');
-  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
 
-  const standings = useMemo(
-    () => (data ? calculateStandings(data.teams, data.matches) : []),
-    [data]
-  );
-  const calendarMatches = useMemo(
-    () => (data ? sortCalendarMatches(data.matches) : []),
-    [data]
-  );
-  const resultMatches = useMemo(
-    () => (data ? sortResultMatches(data.matches) : []),
-    [data]
-  );
-  const matchesByTeam = useMemo(() => {
-    const groups = new Map<string, MatchWithSets[]>();
-
-    if (!data) {
-      return groups;
-    }
-
-    data.teams.forEach((team) => {
-      groups.set(
-        team.id,
-        sortCalendarMatches(
-          data.matches.filter(
-            (match) => match.home_team_id === team.id || match.away_team_id === team.id
-          )
-        )
-      );
-    });
-
-    return groups;
-  }, [data]);
+  useEffect(() => {
+    document.title = 'PAD - Padel And Drink';
+  }, []);
 
   if (tournamentQuery.isLoading) {
     return (
@@ -197,21 +170,65 @@ export function PublicTournamentRoute() {
     );
   }
 
+  return <PublicTournamentView data={data} />;
+}
+
+export function PublicTournamentView({
+  data,
+  header
+}: {
+  data: PublicTournamentData;
+  header?: ReactNode;
+}) {
+  const [activeTab, setActiveTab] = useState<PublicTab>('standings');
+  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
+
+  const standings = useMemo(
+    () => calculateStandings(data.teams, data.matches),
+    [data]
+  );
+  const calendarMatches = useMemo(
+    () => sortCalendarMatches(data.matches),
+    [data.matches]
+  );
+  const resultMatches = useMemo(
+    () => sortResultMatches(data.matches),
+    [data.matches]
+  );
+  const matchesByTeam = useMemo(() => {
+    const groups = new Map<string, MatchWithSets[]>();
+
+    data.teams.forEach((team) => {
+      groups.set(
+        team.id,
+        sortCalendarMatches(
+          data.matches.filter(
+            (match) => match.home_team_id === team.id || match.away_team_id === team.id
+          )
+        )
+      );
+    });
+
+    return groups;
+  }, [data]);
+
   return (
     <main className={styles.page}>
-      <header className={styles.hero}>
-        <nav className={styles.nav}>
-          <strong>Padel League</strong>
-          <Link className={styles.adminLink} to={appPaths.auth}>
-            Login admin
-          </Link>
-        </nav>
-        <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>Torneo attivo</p>
-          <h1>{data.tournament.name}</h1>
-          {data.tournament.description ? <p>{data.tournament.description}</p> : null}
-        </div>
-      </header>
+      {header ?? (
+        <header className={styles.hero}>
+          <nav className={styles.nav}>
+            <Link className={styles.adminLink} to={appPaths.auth}>
+              Login admin
+            </Link>
+          </nav>
+          <div className={styles.heroContent}>
+            <img className={styles.heroLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
+            <p className={styles.eyebrow}>Torneo attivo</p>
+            <h1>{data.tournament.name}</h1>
+            {data.tournament.description ? <p>{data.tournament.description}</p> : null}
+          </div>
+        </header>
+      )}
 
       <section className={styles.content}>
         <nav className={styles.tabs} aria-label="Sezioni torneo">
@@ -394,7 +411,7 @@ function TeamAccordionItem({
           <div className={styles.matchList}>
             {matches.map((match) => (
               <article
-                className={cx(styles.matchCard, match.status === 'played' && styles.matchCardPlayed)}
+                className={cx(styles.matchCard, styles[`matchCard_${match.status}`])}
                 key={match.id}
               >
                 <div className={styles.matchTopline}>
@@ -447,7 +464,7 @@ function MatchList({
     <div className={styles.matchList}>
       {matches.map((match) => (
         <article
-          className={cx(styles.matchCard, match.status === 'played' && styles.matchCardPlayed)}
+          className={cx(styles.matchCard, styles[`matchCard_${match.status}`])}
           key={match.id}
         >
           <div className={styles.matchTopline}>

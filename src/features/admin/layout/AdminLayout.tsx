@@ -10,9 +10,16 @@ type NavigationItem = {
   label: string;
   to: string;
   isActive: (pathname: string) => boolean;
+  variant?: 'public';
 };
 
 const navigationItems: NavigationItem[] = [
+  {
+    label: 'Home Pubblica',
+    to: appPaths.home,
+    isActive: (pathname) => pathname === appPaths.home,
+    variant: 'public'
+  },
   {
     label: 'Dashboard',
     to: appPaths.admin,
@@ -64,6 +71,46 @@ function cx(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
+function getAdminTitle(pathname: string): string {
+  if (pathname === appPaths.admin) {
+    return 'PAD | Dashboard';
+  }
+
+  if (pathname.startsWith(appPaths.adminTournaments)) {
+    return 'PAD | Tornei';
+  }
+
+  if (pathname.startsWith(appPaths.adminTeams)) {
+    return 'PAD | Squadre';
+  }
+
+  if (pathname.startsWith(appPaths.adminPlayers)) {
+    return 'PAD | Giocatori';
+  }
+
+  if (pathname.startsWith(appPaths.adminCalendar)) {
+    return 'PAD | Calendario';
+  }
+
+  if (pathname.startsWith(appPaths.adminStandings)) {
+    return 'PAD | Classifica';
+  }
+
+  if (pathname.startsWith(appPaths.adminGallery)) {
+    return 'PAD | Gallery';
+  }
+
+  if (pathname.startsWith(appPaths.adminMatches)) {
+    return 'PAD | Partite';
+  }
+
+  if (pathname.startsWith(appPaths.adminSettings)) {
+    return 'PAD | Impostazioni';
+  }
+
+  return 'PAD | Admin';
+}
+
 export function AdminLayout() {
   const { logout, profile } = useAuth();
   const location = useLocation();
@@ -71,6 +118,10 @@ export function AdminLayout() {
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.title = getAdminTitle(location.pathname);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -97,7 +148,10 @@ export function AdminLayout() {
           <span />
           <span />
         </button>
-        <strong>Padel League</strong>
+        <span className={styles.mobileBrand}>
+          <img aria-hidden="true" className={styles.mobileLogo} src="/assets/brand/pad-logo.png" />
+          <strong>PAD</strong>
+        </span>
       </header>
 
       <button
@@ -111,10 +165,10 @@ export function AdminLayout() {
 
       <aside className={cx(styles.sidebar, isMobileMenuOpen && styles.sidebarOpen)}>
         <div className={styles.brand}>
-          <span className={styles.brandMark}>PAL</span>
+          <img aria-hidden="true" className={styles.brandLogo} src="/assets/brand/pad-logo.png" />
           <div>
-            <strong>Padel League</strong>
-            <span>Admin</span>
+            <strong>PAD</strong>
+            <span>Padel And Drink</span>
           </div>
         </div>
 
@@ -123,6 +177,7 @@ export function AdminLayout() {
             <Link
               className={cx(
                 styles.navLink,
+                item.variant === 'public' && styles.navLinkPublic,
                 item.isActive(location.pathname) && styles.navLinkActive
               )}
               key={item.label}

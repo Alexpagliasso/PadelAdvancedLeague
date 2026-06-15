@@ -1,6 +1,6 @@
 .shell {
   min-height: 100dvh;
-  background: var(--color-surface);
+  background: var(--color-page);
   color: var(--color-text);
 }
 
@@ -12,9 +12,23 @@
   align-items: center;
   gap: 0.75rem;
   min-height: 3.5rem;
-  border-bottom: 1px solid #d9e4df;
-  background: #ffffff;
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+  background: var(--pad-navy);
+  color: var(--pad-surface);
   padding: 0.6rem 1rem;
+}
+
+.mobileBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--pad-surface);
+}
+
+.mobileLogo {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
 }
 
 .menuButton {
@@ -22,9 +36,9 @@
   gap: 0.25rem;
   width: 2.4rem;
   height: 2.4rem;
-  border: 1px solid #cbd8d2;
+  border: 1px solid rgb(255 255 255 / 28%);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: rgb(255 255 255 / 8%);
   cursor: pointer;
   padding: 0.58rem;
 }
@@ -33,7 +47,7 @@
   display: block;
   height: 2px;
   border-radius: 999px;
-  background: #0b1f1a;
+  background: var(--pad-surface);
 }
 
 .overlay {
@@ -41,7 +55,7 @@
   z-index: 40;
   inset: 0;
   border: 0;
-  background: rgb(11 31 26 / 42%);
+  background: rgb(4 27 87 / 42%);
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
@@ -63,8 +77,9 @@
   flex-direction: column;
   gap: 1.25rem;
   width: min(18rem, 86vw);
-  border-right: 1px solid #d9e4df;
-  background: #ffffff;
+  border-right: 1px solid rgb(255 255 255 / 14%);
+  background: var(--pad-navy);
+  color: var(--pad-surface);
   padding: 1rem;
   transform: translateX(-100%);
   transition: transform 180ms ease;
@@ -83,20 +98,14 @@
 
 .brand span {
   display: block;
-  color: var(--color-muted);
+  color: var(--pad-blue-soft);
   font-size: 0.8rem;
 }
 
-.brandMark {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.5rem;
-  background: #0b1f1a;
-  color: #ffffff;
-  font-size: 0.8rem;
-  font-weight: 700;
-  place-items: center;
+.brandLogo {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
 }
 
 .nav {
@@ -106,31 +115,61 @@
 
 .navLink {
   border-radius: 0.5rem;
-  color: var(--color-muted);
+  color: var(--pad-blue-soft);
   padding: 0.75rem 0.85rem;
   text-decoration: none;
 }
 
-.navLinkActive {
-  background: #eaf5ef;
-  color: #0b1f1a;
+.navLink:hover {
+  background: rgb(215 240 255 / 14%);
+  color: var(--pad-surface);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.navLinkPublic {
+  border: 1px solid var(--pad-orange-border);
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy-dark);
   font-weight: 700;
+}
+
+.navLinkActive {
+  box-shadow: inset 4px 0 0 var(--pad-orange);
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy-dark);
+  font-weight: 700;
+}
+
+.navLinkPublic.navLinkActive {
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy-dark);
+}
+
+.navLinkPublic:hover {
+  background: var(--pad-orange-soft-strong);
+  color: var(--pad-navy-dark);
+}
+
+.logoutButton:hover {
+  border-color: var(--pad-blue-soft);
+  color: var(--pad-blue-soft);
 }
 
 .account {
   display: grid;
   gap: 0.75rem;
   margin-top: auto;
-  color: var(--color-muted);
+  color: var(--pad-blue-soft);
   font-size: 0.875rem;
 }
 
 .logoutButton {
   width: 100%;
-  border: 1px solid #cbd8d2;
+  border: 1px solid rgb(255 255 255 / 24%);
   border-radius: 0.5rem;
-  background: #ffffff;
-  color: var(--color-text);
+  background: transparent;
+  color: var(--pad-surface);
   cursor: pointer;
   padding: 0.7rem 0.9rem;
 }

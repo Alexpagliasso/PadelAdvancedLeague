@@ -39,9 +39,9 @@
 }
 
 .panel {
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 1rem;
 }
 
@@ -73,9 +73,9 @@
 .input,
 .select {
   width: 100%;
-  border: 1px solid #cbd8d2;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-text);
   padding: 0.7rem 0.8rem;
 }
@@ -107,14 +107,15 @@
 }
 
 .button {
-  background: #0b1f1a;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--pad-navy-dark);
+  font-weight: 800;
 }
 
 .buttonSecondary {
-  border: 1px solid #cbd8d2;
-  background: #ffffff;
-  color: var(--color-text);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-surface);
 }
 
 .button:disabled,
@@ -126,9 +127,9 @@
 .readOnlyResult {
   display: grid;
   gap: 0.35rem;
-  border: 1px solid #83b99b;
+  border: 1px solid var(--color-success-text);
   border-radius: 0.5rem;
-  background: #eaf5ef;
+  background: var(--color-success-soft);
   padding: 0.75rem;
 }
 
@@ -146,9 +147,9 @@
   display: grid;
   gap: 0.35rem;
   width: 100%;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
   padding: 0.75rem;
@@ -161,8 +162,8 @@
 }
 
 .matchCardActive {
-  border-color: #0b1f1a;
-  background: #eaf5ef;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .tableWrap {
@@ -177,7 +178,7 @@
 
 .table th,
 .table td {
-  border-bottom: 1px solid #edf2ef;
+  border-bottom: 1px solid var(--color-border);
   padding: 0.75rem;
   text-align: left;
 }
@@ -192,7 +193,7 @@
 }
 
 .tableRowActive {
-  background: #eaf5ef;
+  background: var(--color-primary-soft);
 }
 
 .muted {
@@ -202,7 +203,7 @@
 
 .error {
   margin: 0;
-  color: #a02525;
+  color: var(--color-danger-text);
   font-size: 0.875rem;
 }
 
@@ -227,4 +228,19 @@
     display: block;
     overflow-x: auto;
   }
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  color: var(--pad-navy-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+  color: var(--color-surface);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
 }

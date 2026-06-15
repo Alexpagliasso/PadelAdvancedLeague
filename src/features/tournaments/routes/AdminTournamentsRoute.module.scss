@@ -1,6 +1,6 @@
 .page {
   min-height: 100dvh;
-  background: var(--color-surface);
+  background: var(--color-page);
   color: var(--color-text);
   padding: 1.5rem;
 }
@@ -28,9 +28,9 @@
 }
 
 .panel {
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 1rem;
 }
 
@@ -49,9 +49,9 @@
 
 .listButton {
   width: 100%;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
   padding: 0.75rem;
@@ -59,8 +59,8 @@
 }
 
 .listButtonActive {
-  border-color: #0b1f1a;
-  background: #eaf5ef;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .muted {
@@ -98,9 +98,9 @@
 .select,
 .textarea {
   width: 100%;
-  border: 1px solid #cbd8d2;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-text);
   padding: 0.7rem 0.8rem;
 }
@@ -127,7 +127,7 @@
 .detailBlock {
   display: grid;
   gap: 1rem;
-  border-top: 1px solid #d9e4df;
+  border-top: 1px solid var(--color-border);
   margin-top: 1.25rem;
   padding-top: 1.25rem;
 }
@@ -141,9 +141,9 @@
 .statCard {
   display: grid;
   gap: 0.35rem;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #f8fbf9;
+  background: var(--color-page);
   padding: 0.85rem;
 }
 
@@ -173,13 +173,13 @@
   overflow: hidden;
   height: 0.75rem;
   border-radius: 999px;
-  background: #edf2ef;
+  background: var(--color-border);
 }
 
 .progressFill {
   height: 100%;
   border-radius: inherit;
-  background: #0b1f1a;
+  background: var(--color-primary);
   transition: width 180ms ease;
 }
 
@@ -192,8 +192,8 @@
 
 .badge {
   border-radius: 999px;
-  background: #eaf5ef;
-  color: #0b1f1a;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   font-size: 0.8125rem;
   font-weight: 700;
   padding: 0.35rem 0.65rem;
@@ -218,7 +218,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   padding: 0.75rem;
 }
@@ -232,17 +232,18 @@
 .button {
   border: 0;
   border-radius: 0.5rem;
-  background: #0b1f1a;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--pad-navy-dark);
   cursor: pointer;
+  font-weight: 800;
   padding: 0.7rem 0.9rem;
 }
 
 .buttonSecondary {
-  border: 1px solid #cbd8d2;
+  border: 1px solid var(--color-primary);
   border-radius: 0.5rem;
-  background: #ffffff;
-  color: var(--color-text);
+  background: var(--color-primary);
+  color: var(--color-surface);
   cursor: pointer;
   padding: 0.7rem 0.9rem;
 }
@@ -250,8 +251,8 @@
 .buttonDanger {
   border: 0;
   border-radius: 0.5rem;
-  background: #9d2525;
-  color: #ffffff;
+  background: var(--color-danger-text);
+  color: var(--color-surface);
   cursor: pointer;
   padding: 0.7rem 0.9rem;
 }
@@ -264,7 +265,7 @@
 }
 
 .error {
-  color: #a02525;
+  color: var(--color-danger-text);
   font-size: 0.875rem;
 }
 
@@ -285,4 +286,19 @@
   .teamItem span {
     text-align: left;
   }
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  color: var(--pad-navy-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+  color: var(--color-surface);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
 }

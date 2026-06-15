@@ -40,9 +40,9 @@
 }
 
 .panel {
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 1rem;
 }
 
@@ -63,9 +63,9 @@
 
 .select {
   width: 100%;
-  border: 1px solid #cbd8d2;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-text);
   padding: 0.7rem 0.8rem;
 }
@@ -73,9 +73,10 @@
 .button {
   border: 0;
   border-radius: 0.5rem;
-  background: #0b1f1a;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--pad-navy-dark);
   cursor: pointer;
+  font-weight: 800;
   padding: 0.7rem 0.9rem;
 }
 
@@ -85,10 +86,10 @@
 }
 
 .successMessage {
-  border: 1px solid #83b99b;
+  border: 1px solid var(--color-success-text);
   border-radius: 0.5rem;
-  background: #eaf5ef;
-  color: #0b1f1a;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
   font-size: 0.875rem;
   margin: 0;
   padding: 0.75rem;
@@ -102,7 +103,7 @@
 .matchCard {
   display: grid;
   gap: 0.35rem;
-  border: 1px solid #d9e4df;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   color: var(--color-text);
   padding: 0.75rem;
@@ -114,8 +115,8 @@
 }
 
 .matchCardPlayed {
-  border-color: #83b99b;
-  background: #eaf5ef;
+  border-color: var(--color-success-text);
+  background: var(--color-success-soft);
 }
 
 .badge {
@@ -127,23 +128,23 @@
 }
 
 .badge_scheduled {
-  background: #eef3f0;
-  color: #47524d;
+  background: var(--color-primary-soft);
+  color: var(--color-muted);
 }
 
 .badge_played {
-  background: #d8efe2;
-  color: #0b5a32;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
 }
 
 .badge_postponed {
-  background: #fff1c7;
-  color: #715200;
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
 }
 
 .badge_cancelled {
-  background: #f8d7da;
-  color: #842029;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
 }
 
 .tableWrap {
@@ -157,7 +158,7 @@
 
 .table th,
 .table td {
-  border-bottom: 1px solid #edf2ef;
+  border-bottom: 1px solid var(--color-border);
   padding: 0.75rem;
   text-align: left;
 }
@@ -169,7 +170,7 @@
 }
 
 .tableRowPlayed {
-  background: #eaf5ef;
+  background: var(--color-success-soft);
 }
 
 .muted {
@@ -180,7 +181,7 @@
 .error {
   margin: 0 auto 1rem;
   max-width: 86rem;
-  color: #a02525;
+  color: var(--color-danger-text);
   font-size: 0.875rem;
 }
 
@@ -201,4 +202,19 @@
     display: block;
     overflow-x: auto;
   }
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  color: var(--pad-navy-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+  color: var(--color-surface);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
 }
