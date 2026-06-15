@@ -1,0 +1,40 @@
+.page {
+  padding: 1.5rem;
+}
+
+.header {
+  margin: 0 auto 1rem;
+  max-width: 80rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.panel {
+  margin: 0 auto;
+  max-width: 80rem;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.panelTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.6;
+}

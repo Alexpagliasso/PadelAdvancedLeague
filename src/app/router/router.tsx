@@ -11,6 +11,11 @@ import {
 } from '@/features/auth/components/AuthGuards';
 import { useAuth } from '@/features/auth/model/useAuth';
 import { LoginRoute } from '@/features/auth/routes/LoginRoute';
+import { AdminLayout } from '@/features/admin/layout/AdminLayout';
+import { AdminDashboardRoute } from '@/features/admin/routes/AdminDashboardRoute';
+import { AdminPlaceholderRoute } from '@/features/admin/routes/AdminPlaceholderRoute';
+import { AdminSeasonsRoute } from '@/features/seasons/routes/AdminSeasonsRoute';
+import { AdminTournamentsRoute } from '@/features/tournaments/routes/AdminTournamentsRoute';
 
 function RouteShell() {
   return (
@@ -87,10 +92,48 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <RequireRole allowedRoles={['super_admin', 'admin']}>
-              <BootstrapRoute />
+              <AdminLayout />
             </RequireRole>
           </RequireAuth>
-        )
+        ),
+        children: [
+          {
+            index: true,
+            element: <AdminDashboardRoute />
+          },
+          {
+            path: 'tournaments',
+            element: <AdminTournamentsRoute />
+          },
+          {
+            path: 'tournaments/:tournamentId/seasons',
+            element: <AdminSeasonsRoute />
+          },
+          {
+            path: 'seasons/:seasonId/settings',
+            element: <AdminSeasonsRoute mode="settings" />
+          },
+          {
+            path: 'teams',
+            element: <AdminPlaceholderRoute title="Squadre" />
+          },
+          {
+            path: 'players',
+            element: <AdminPlaceholderRoute title="Giocatori" />
+          },
+          {
+            path: 'matches',
+            element: <AdminPlaceholderRoute title="Partite" />
+          },
+          {
+            path: 'gallery',
+            element: <AdminPlaceholderRoute title="Gallery" />
+          },
+          {
+            path: 'settings',
+            element: <AdminPlaceholderRoute title="Impostazioni" />
+          }
+        ]
       },
       {
         path: appPaths.profile.slice(1),

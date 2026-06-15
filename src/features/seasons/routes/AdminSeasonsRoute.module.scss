@@ -1,0 +1,204 @@
+.page {
+  min-height: 100dvh;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 1.5rem;
+}
+
+.header,
+.toolbar,
+.layout {
+  margin: 0 auto;
+  max-width: 80rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.toolbar {
+  margin-bottom: 1rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.panel {
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.input,
+.select {
+  width: 100%;
+  border: 1px solid #cbd8d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  padding: 0.7rem 0.8rem;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.8rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.button,
+.buttonSecondary,
+.buttonDanger {
+  border-radius: 0.5rem;
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+  text-decoration: none;
+}
+
+.button {
+  border: 0;
+  background: #0b1f1a;
+  color: #ffffff;
+}
+
+.buttonSecondary {
+  border: 1px solid #cbd8d2;
+  background: #ffffff;
+  color: var(--color-text);
+}
+
+.buttonDanger {
+  border: 0;
+  background: #9d2525;
+  color: #ffffff;
+}
+
+.button:disabled,
+.buttonSecondary:disabled,
+.buttonDanger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listButton {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.listButton span {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.listButtonActive {
+  border-color: #0b1f1a;
+  background: #eaf5ef;
+}
+
+.muted {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  margin: 0;
+  color: #a02525;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+  .layout,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header,
+  .panelHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

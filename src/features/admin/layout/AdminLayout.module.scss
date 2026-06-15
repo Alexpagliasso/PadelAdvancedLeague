@@ -1,0 +1,101 @@
+.shell {
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.sidebar {
+  display: flex;
+  position: sticky;
+  top: 0;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100dvh;
+  border-right: 1px solid #d9e4df;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+}
+
+.brand span {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.brandMark {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  background: #0b1f1a;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  place-items: center;
+}
+
+.nav {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.navLink {
+  border-radius: 0.5rem;
+  color: var(--color-muted);
+  padding: 0.75rem 0.85rem;
+  text-decoration: none;
+}
+
+.navLinkActive {
+  background: #eaf5ef;
+  color: #0b1f1a;
+  font-weight: 700;
+}
+
+.account {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: auto;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.logoutButton {
+  width: 100%;
+  border: 1px solid #cbd8d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+}
+
+.content {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid #d9e4df;
+  }
+
+  .nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

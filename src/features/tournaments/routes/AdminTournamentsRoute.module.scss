@@ -1,0 +1,171 @@
+.page {
+  min-height: 100dvh;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 1.5rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 auto 1.5rem;
+  max-width: 80rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  gap: 1rem;
+  margin: 0 auto;
+  max-width: 80rem;
+}
+
+.panel {
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.panelTitle {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listButton {
+  width: 100%;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.listButtonActive {
+  border-color: #0b1f1a;
+  background: #eaf5ef;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid #cbd8d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  padding: 0.7rem 0.8rem;
+}
+
+.textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.button {
+  border: 0;
+  border-radius: 0.5rem;
+  background: #0b1f1a;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+}
+
+.buttonSecondary {
+  border: 1px solid #cbd8d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+}
+
+.buttonDanger {
+  border: 0;
+  border-radius: 0.5rem;
+  background: #9d2525;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+}
+
+.button:disabled,
+.buttonSecondary:disabled,
+.buttonDanger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.error {
+  color: #a02525;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+  .layout,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

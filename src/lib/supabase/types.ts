@@ -7,7 +7,7 @@ export type MatchPhase = 'regular_season' | 'playoff' | 'playout';
 export type MatchStatus = 'scheduled' | 'played' | 'postponed' | 'cancelled';
 export type ResultStatus = 'pending' | 'official';
 
-type TableDefinition<Row, Insert = Row, Update = Partial<Insert>> = {
+type TableDefinition<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
   Update: Update;
