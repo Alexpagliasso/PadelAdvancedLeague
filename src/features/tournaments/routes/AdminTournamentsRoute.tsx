@@ -1,4 +1,5 @@
 import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FaFloppyDisk, FaPenToSquare, FaPlus, FaTrashCan } from 'react-icons/fa6';
 
 import { useMatchesBySeasonQuery } from '@/features/matches/api/matchesQueries';
 import { formatMatchDate } from '@/features/matches/lib/matchDateTime';
@@ -264,7 +265,8 @@ export function AdminTournamentsRoute() {
         <h1 className={styles.title}>Tornei</h1>
         <div className={styles.actions}>
           <button className={styles.button} onClick={handleCreateTournament} type="button">
-            Nuovo torneo
+            <FaPlus aria-hidden="true" className={styles.buttonIcon} />
+            <span>Nuovo torneo</span>
           </button>
         </div>
       </header>
@@ -400,7 +402,8 @@ export function AdminTournamentsRoute() {
 
             <div className={styles.actions}>
               <button className={styles.button} disabled={isBusy} type="submit">
-                Salva torneo
+                <FaFloppyDisk aria-hidden="true" className={styles.buttonIcon} />
+                <span>Salva torneo</span>
               </button>
               {selectedTournament ? (
                 <>
@@ -410,7 +413,8 @@ export function AdminTournamentsRoute() {
                     onClick={() => void handleStatusChange('active')}
                     type="button"
                   >
-                    Attiva
+                    <FaPenToSquare aria-hidden="true" className={styles.buttonIcon} />
+                    <span>Attiva</span>
                   </button>
                   <button
                     className={styles.buttonSecondary}
@@ -418,7 +422,8 @@ export function AdminTournamentsRoute() {
                     onClick={() => void handleStatusChange('draft')}
                     type="button"
                   >
-                    Disattiva
+                    <FaPenToSquare aria-hidden="true" className={styles.buttonIcon} />
+                    <span>Disattiva</span>
                   </button>
                   <button
                     className={styles.buttonDanger}
@@ -426,7 +431,8 @@ export function AdminTournamentsRoute() {
                     onClick={() => void handleDeleteTournament()}
                     type="button"
                   >
-                    Elimina
+                    <FaTrashCan aria-hidden="true" className={styles.buttonIcon} />
+                    <span>Elimina</span>
                   </button>
                 </>
               ) : null}
@@ -611,7 +617,8 @@ export function AdminTournamentsRoute() {
                     disabled={isBusy || !selectedMainSeasonId}
                     type="submit"
                   >
-                    Aggiungi squadra
+                    <FaPlus aria-hidden="true" className={styles.buttonIcon} />
+                    <span>Aggiungi squadra</span>
                   </button>
                 </div>
               </form>

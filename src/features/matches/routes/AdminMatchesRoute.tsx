@@ -1,4 +1,7 @@
 import { type SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import type { IconType } from 'react-icons';
+import { FaFloppyDisk, FaPlus, FaRotateLeft } from 'react-icons/fa6';
+import { MdCancel, MdCheckCircle, MdEventBusy, MdSchedule } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 
 import type { MatchStatus } from '@/lib/supabase/types';
@@ -119,6 +122,28 @@ function getStatusLabel(status: MatchStatus): string {
   };
 
   return labels[status];
+}
+
+function getStatusIcon(status: MatchStatus): IconType {
+  const icons: Record<MatchStatus, IconType> = {
+    scheduled: MdSchedule,
+    played: MdCheckCircle,
+    postponed: MdEventBusy,
+    cancelled: MdCancel
+  };
+
+  return icons[status];
+}
+
+function MatchStatusLabel({ status }: { status: MatchStatus }) {
+  const StatusIcon = getStatusIcon(status);
+
+  return (
+    <span className={styles.statusLabel}>
+      <StatusIcon aria-hidden="true" className={styles.statusIcon} />
+      <span>{getStatusLabel(status)}</span>
+    </span>
+  );
 }
 
 function getSetsLabel(match: MatchWithSets): string {
@@ -441,7 +466,8 @@ export function AdminMatchesRoute() {
           <h1 className={styles.title}>Partite</h1>
         </div>
         <button className={styles.button} disabled={!selectedSeasonId} onClick={handleNewMatch} type="button">
-          Nuova partita
+          <FaPlus aria-hidden="true" className={styles.buttonIcon} />
+          <span>Nuova partita</span>
         </button>
       </header>
 
@@ -679,7 +705,8 @@ export function AdminMatchesRoute() {
 
             <div className={styles.actions}>
               <button className={styles.button} disabled={isBusy || !selectedSeasonId} type="submit">
-                Salva partita
+                <FaFloppyDisk aria-hidden="true" className={styles.buttonIcon} />
+                <span>Salva partita</span>
               </button>
               {selectedMatch?.result_status === 'official' ? (
                 <button
@@ -688,7 +715,8 @@ export function AdminMatchesRoute() {
                   onClick={() => void handleResetResult()}
                   type="button"
                 >
-                  Annulla risultato
+                  <FaRotateLeft aria-hidden="true" className={styles.buttonIcon} />
+                  <span>Annulla risultato</span>
                 </button>
               ) : null}
             </div>
@@ -720,7 +748,7 @@ export function AdminMatchesRoute() {
                 </strong>
                 <span>{formatMatchDateTime(match.scheduled_at)}</span>
                 <span>
-                  {getStatusLabel(match.status)} · {getScoreLabel(match)} · {getSetsLabel(match)}
+                  <MatchStatusLabel status={match.status} /> · {getScoreLabel(match)} · {getSetsLabel(match)}
                 </span>
               </button>
             ))}
@@ -752,7 +780,9 @@ export function AdminMatchesRoute() {
                       {getTeamName(match.home_team_id)} vs {getTeamName(match.away_team_id)}
                     </td>
                     <td>{match.venue ?? '-'}</td>
-                    <td>{getStatusLabel(match.status)}</td>
+                    <td>
+                      <MatchStatusLabel status={match.status} />
+                    </td>
                     <td>{getScoreLabel(match)}</td>
                     <td>{getSetsLabel(match)}</td>
                   </tr>

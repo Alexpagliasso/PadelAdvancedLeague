@@ -114,6 +114,9 @@
 }
 
 .navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   border-radius: 0.5rem;
   color: var(--pad-blue-soft);
   padding: 0.75rem 0.85rem;
@@ -123,8 +126,7 @@
 .navLink:hover {
   background: rgb(215 240 255 / 14%);
   color: var(--pad-surface);
-  text-decoration: underline;
-  text-underline-offset: 0.2rem;
+  text-decoration: none;
 }
 
 .navLinkPublic {
@@ -165,6 +167,10 @@
 }
 
 .logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
   width: 100%;
   border: 1px solid rgb(255 255 255 / 24%);
   border-radius: 0.5rem;
@@ -172,6 +178,12 @@
   color: var(--pad-surface);
   cursor: pointer;
   padding: 0.7rem 0.9rem;
+}
+
+.navIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .content {

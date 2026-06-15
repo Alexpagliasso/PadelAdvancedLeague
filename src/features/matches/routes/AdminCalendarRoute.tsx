@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { IconType } from 'react-icons';
+import { FaCalendarPlus } from 'react-icons/fa6';
+import { MdCancel, MdCheckCircle, MdEventBusy, MdSchedule } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
@@ -50,6 +53,28 @@ function getStatusLabel(status: MatchWithSets['status']): string {
   };
 
   return labels[status];
+}
+
+function getStatusIcon(status: MatchWithSets['status']): IconType {
+  const icons: Record<MatchWithSets['status'], IconType> = {
+    scheduled: MdSchedule,
+    played: MdCheckCircle,
+    postponed: MdEventBusy,
+    cancelled: MdCancel
+  };
+
+  return icons[status];
+}
+
+function MatchStatusBadge({ status }: { status: MatchWithSets['status'] }) {
+  const StatusIcon = getStatusIcon(status);
+
+  return (
+    <span className={cx(styles.badge, styles[`badge_${status}`])}>
+      <StatusIcon aria-hidden="true" className={styles.badgeIcon} />
+      <span>{getStatusLabel(status)}</span>
+    </span>
+  );
 }
 
 function getCalendarGeneratedAt(matches: MatchWithSets[]): string | null {
@@ -183,7 +208,8 @@ export function AdminCalendarRoute() {
           onClick={() => void handleGenerateCalendar()}
           type="button"
         >
-          Genera calendario
+          <FaCalendarPlus aria-hidden="true" className={styles.buttonIcon} />
+          <span>Genera calendario</span>
         </button>
       </header>
 
@@ -240,9 +266,7 @@ export function AdminCalendarRoute() {
                       key={match.id}
                       to={`${appPaths.adminMatches}/${match.id}/edit`}
                     >
-                      <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
-                        {getStatusLabel(match.status)}
-                      </span>
+                      <MatchStatusBadge status={match.status} />
                       <strong>
                         {homeTeamName} vs {awayTeamName}
                       </strong>
@@ -304,9 +328,7 @@ export function AdminCalendarRoute() {
                         <td>{homeTeamName}</td>
                         <td>{awayTeamName}</td>
                         <td>
-                          <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
-                            {getStatusLabel(match.status)}
-                          </span>
+                          <MatchStatusBadge status={match.status} />
                         </td>
                         <td>{getResultLabel(match, homeTeamName, awayTeamName)}</td>
                       </tr>

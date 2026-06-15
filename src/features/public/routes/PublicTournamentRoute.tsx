@@ -1,4 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import type { IconType } from 'react-icons';
+import { FaCalendarDays, FaRankingStar, FaUsers } from 'react-icons/fa6';
+import { MdCancel, MdCheckCircle, MdEventBusy, MdSchedule } from 'react-icons/md';
 import { Link, useParams } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
@@ -24,11 +27,11 @@ import styles from '@/features/public/routes/PublicTournamentRoute.module.scss';
 
 type PublicTab = 'standings' | 'teams' | 'calendar' | 'results';
 
-const publicTabs: { id: PublicTab; label: string }[] = [
-  { id: 'standings', label: 'Classifica' },
-  { id: 'teams', label: 'Squadre' },
-  { id: 'calendar', label: 'Calendario' },
-  { id: 'results', label: 'Risultati' }
+const publicTabs: { icon: IconType; id: PublicTab; label: string }[] = [
+  { icon: FaRankingStar, id: 'standings', label: 'Classifica' },
+  { icon: FaUsers, id: 'teams', label: 'Squadre' },
+  { icon: FaCalendarDays, id: 'calendar', label: 'Calendario' },
+  { icon: MdCheckCircle, id: 'results', label: 'Risultati' }
 ];
 
 function getErrorMessage(error: unknown): string {
@@ -108,6 +111,25 @@ function getStatusLabel(status: MatchWithSets['status']): string {
   };
 
   return labels[status];
+}
+
+function getStatusIcon(status: MatchWithSets['status']): IconType {
+  const icons: Record<MatchWithSets['status'], IconType> = {
+    scheduled: MdSchedule,
+    played: MdCheckCircle,
+    postponed: MdEventBusy,
+    cancelled: MdCancel
+  };
+
+  return icons[status];
+}
+
+function getPodiumIcon(position: number): IconType | null {
+  if (position >= 1 && position <= 3) {
+    return FaRankingStar;
+  }
+
+  return null;
 }
 
 function getSetsLabel(match: MatchWithSets): string {
@@ -372,7 +394,8 @@ export function PublicTournamentView({
               }}
               type="button"
             >
-              {tab.label}
+              <tab.icon aria-hidden="true" className={styles.inlineIcon} />
+              <span>{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -386,7 +409,17 @@ export function PublicTournamentView({
             <div className={styles.standingsList}>
               {standings.map((row) => (
                 <article className={styles.standingCard} key={row.teamId}>
-                  <span className={styles.position}>{row.position}</span>
+                  <span className={cx(styles.position, row.position <= 3 && styles.positionPodium)}>
+                    {(() => {
+                      const PodiumIcon = getPodiumIcon(row.position);
+
+                      return PodiumIcon ? (
+                        <PodiumIcon aria-hidden="true" className={styles.positionIcon} />
+                      ) : (
+                        row.position
+                      );
+                    })()}
+                  </span>
                   <strong>{row.teamName}</strong>
                   <span>PG {row.played}</span>
                   <span>V {row.wins}</span>
@@ -422,7 +455,22 @@ export function PublicTournamentView({
                 <tbody>
                   {standings.map((row) => (
                     <tr key={row.teamId}>
-                      <td>{row.position}</td>
+                      <td>
+                        <span className={cx(styles.tablePosition, row.position <= 3 && styles.positionPodium)}>
+                          {(() => {
+                            const PodiumIcon = getPodiumIcon(row.position);
+
+                            return PodiumIcon ? (
+                              <>
+                                <PodiumIcon aria-hidden="true" className={styles.positionIcon} />
+                                <span>{row.position}</span>
+                              </>
+                            ) : (
+                              row.position
+                            );
+                          })()}
+                        </span>
+                      </td>
                       <td>{row.teamName}</td>
                       <td>{row.played}</td>
                       <td>{row.wins}</td>
@@ -572,9 +620,7 @@ function TeamAccordionItem({
                 >
                   <div className={styles.matchTopline}>
                     <strong>vs {getOpponentName(match, team.id, teams)}</strong>
-                    <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
-                      {getStatusLabel(match.status)}
-                    </span>
+                    <MatchStatusBadge status={match.status} />
                   </div>
                   <dl className={styles.matchMeta}>
                     <div>
@@ -640,9 +686,7 @@ function MatchList({
             <strong>
               {getTeamName(teams, match.home_team_id)} vs {getTeamName(teams, match.away_team_id)}
             </strong>
-            <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
-              {getStatusLabel(match.status)}
-            </span>
+            <MatchStatusBadge status={match.status} />
           </div>
           <span>
             {formatMatchDate(match.scheduled_at)} · {formatMatchTime(match.scheduled_at)}
@@ -653,5 +697,16 @@ function MatchList({
         </article>
       ))}
     </div>
+  );
+}
+
+function MatchStatusBadge({ status }: { status: MatchWithSets['status'] }) {
+  const StatusIcon = getStatusIcon(status);
+
+  return (
+    <span className={cx(styles.badge, styles[`badge_${status}`])}>
+      <StatusIcon aria-hidden="true" className={styles.badgeIcon} />
+      <span>{getStatusLabel(status)}</span>
+    </span>
   );
 }

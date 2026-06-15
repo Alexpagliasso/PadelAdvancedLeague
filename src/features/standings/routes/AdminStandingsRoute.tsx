@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FaRankingStar } from 'react-icons/fa6';
 
 import { useMatchesBySeasonQuery } from '@/features/matches/api/matchesQueries';
 import { calculateStandings } from '@/features/standings/lib/standingsEngine';
@@ -118,7 +119,13 @@ export function AdminStandingsRoute() {
             <article className={styles.card} key={row.teamId}>
               <div className={styles.cardHeader}>
                 <strong>
-                  {row.position.toString()}. {row.teamName}
+                  <span className={row.position <= 3 ? styles.podiumPosition : styles.position}>
+                    {row.position <= 3 ? (
+                      <FaRankingStar aria-hidden="true" className={styles.positionIcon} />
+                    ) : null}
+                    <span>{row.position.toString()}.</span>
+                  </span>
+                  {row.teamName}
                 </strong>
                 <span>{row.points.toString()} Pt</span>
               </div>
@@ -185,7 +192,14 @@ export function AdminStandingsRoute() {
             <tbody>
               {standings.map((row) => (
                 <tr key={row.teamId}>
-                  <td>{row.position}</td>
+                  <td>
+                    <span className={row.position <= 3 ? styles.podiumPosition : styles.position}>
+                      {row.position <= 3 ? (
+                        <FaRankingStar aria-hidden="true" className={styles.positionIcon} />
+                      ) : null}
+                      <span>{row.position}</span>
+                    </span>
+                  </td>
                   <td>{row.teamName}</td>
                   <td>{row.played}</td>
                   <td>{row.wins}</td>

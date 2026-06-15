@@ -1,4 +1,18 @@
 import { useEffect, useState } from 'react';
+import type { IconType } from 'react-icons';
+import {
+  FaCalendarDays,
+  FaGaugeHigh,
+  FaGear,
+  FaHouse,
+  FaImages,
+  FaPeopleGroup,
+  FaRankingStar,
+  FaRightFromBracket,
+  FaTableList,
+  FaTrophy,
+  FaUsers
+} from 'react-icons/fa6';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
@@ -7,6 +21,7 @@ import { useAuth } from '@/features/auth/model/useAuth';
 import styles from '@/features/admin/layout/AdminLayout.module.scss';
 
 type NavigationItem = {
+  icon: IconType;
   label: string;
   to: string;
   isActive: (pathname: string) => boolean;
@@ -15,52 +30,62 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
   {
+    icon: FaHouse,
     label: 'Home pubblica',
     to: appPaths.home,
     isActive: (pathname) => pathname === appPaths.home,
     variant: 'public'
   },
   {
+    icon: FaGaugeHigh,
     label: 'Dashboard',
     to: appPaths.admin,
     isActive: (pathname) => pathname === appPaths.admin
   },
   {
+    icon: FaTrophy,
     label: 'Tornei',
     to: appPaths.adminTournaments,
     isActive: (pathname) => pathname === appPaths.adminTournaments
   },
   {
+    icon: FaPeopleGroup,
     label: 'Squadre',
     to: appPaths.adminTeams,
     isActive: (pathname) => pathname.startsWith(appPaths.adminTeams)
   },
   {
+    icon: FaUsers,
     label: 'Giocatori',
     to: appPaths.adminPlayers,
     isActive: (pathname) => pathname.startsWith(appPaths.adminPlayers)
   },
   {
+    icon: FaTableList,
     label: 'Partite',
     to: appPaths.adminMatches,
     isActive: (pathname) => pathname.startsWith(appPaths.adminMatches)
   },
   {
+    icon: FaCalendarDays,
     label: 'Calendario',
     to: appPaths.adminCalendar,
     isActive: (pathname) => pathname.startsWith(appPaths.adminCalendar)
   },
   {
+    icon: FaRankingStar,
     label: 'Classifica',
     to: appPaths.adminStandings,
     isActive: (pathname) => pathname.startsWith(appPaths.adminStandings)
   },
   {
+    icon: FaImages,
     label: 'Gallery',
     to: appPaths.adminGallery,
     isActive: (pathname) => pathname.startsWith(appPaths.adminGallery)
   },
   {
+    icon: FaGear,
     label: 'Impostazioni',
     to: appPaths.adminSettings,
     isActive: (pathname) => pathname.startsWith(appPaths.adminSettings)
@@ -186,7 +211,8 @@ export function AdminLayout() {
               }}
               to={item.to}
             >
-              {item.label}
+              <item.icon aria-hidden="true" className={styles.navIcon} />
+              <span>{item.label}</span>
             </Link>
           ))}
         </nav>
@@ -200,7 +226,8 @@ export function AdminLayout() {
             }}
             type="button"
           >
-            Esci
+            <FaRightFromBracket aria-hidden="true" className={styles.navIcon} />
+            <span>Esci</span>
           </button>
         </div>
       </aside>

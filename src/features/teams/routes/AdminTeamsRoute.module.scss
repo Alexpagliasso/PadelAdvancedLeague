@@ -122,6 +122,9 @@
 }
 
 .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--color-muted);
   font-size: 0.875rem;
 }
@@ -136,6 +139,149 @@
   padding: 0.7rem 0.8rem;
 }
 
+.playerPicker {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  border: 1px solid var(--pad-blue-border);
+  border-radius: 0.5rem;
+  background: var(--pad-blue-soft);
+  padding: 0.85rem;
+}
+
+.playerPickerHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.playerPickerHint {
+  color: var(--pad-navy);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.selectedPlayers {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.selectedPlayerCard {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr) 2.2rem;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid var(--pad-orange-border);
+  border-radius: 0.5rem;
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy);
+  padding: 0.55rem;
+}
+
+.selectedPlayerCard strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removePlayerButton {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid var(--pad-orange-border);
+  border-radius: 999px;
+  background: var(--pad-surface);
+  color: var(--pad-navy);
+  cursor: pointer;
+  place-items: center;
+}
+
+.removePlayerButton:hover {
+  border-color: var(--pad-orange);
+  background: var(--pad-orange-soft-strong);
+}
+
+.playerCards {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.playerCard {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.75rem;
+  border: 1px solid var(--pad-border);
+  border-radius: 0.5rem;
+  background: var(--pad-surface);
+  color: var(--pad-text);
+  cursor: pointer;
+  padding: 0.65rem;
+  text-align: left;
+}
+
+.playerCard:hover:not(:disabled) {
+  border-color: var(--pad-blue-border);
+  background: var(--pad-blue-soft-strong);
+}
+
+.playerCardSelected {
+  border-color: var(--pad-orange);
+  background: var(--pad-orange-soft);
+}
+
+.playerCardDisabled {
+  cursor: not-allowed;
+  opacity: 0.74;
+}
+
+.playerCardBody {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.playerCardBody strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playerCardBody small {
+  color: var(--pad-muted);
+  font-size: 0.78rem;
+}
+
+.playerCardSelected .playerCardBody small {
+  color: var(--pad-navy);
+  font-weight: 800;
+}
+
+.playerAvatar,
+.playerAvatarFallback {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid var(--pad-orange-border);
+  border-radius: 50%;
+  background: var(--pad-blue-soft);
+  color: var(--pad-navy);
+  flex: 0 0 auto;
+}
+
+.playerAvatar {
+  object-fit: cover;
+}
+
+.playerAvatarFallback {
+  display: grid;
+  place-items: center;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -144,10 +290,21 @@
 
 .button,
 .buttonDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   border: 0;
   border-radius: 0.5rem;
   cursor: pointer;
   padding: 0.7rem 0.9rem;
+}
+
+.buttonIcon,
+.labelIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .button {
@@ -189,6 +346,10 @@
 
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .playerPicker {
+    grid-column: 1 / -1;
   }
 }
 

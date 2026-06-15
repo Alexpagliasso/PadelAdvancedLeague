@@ -230,6 +230,10 @@
 }
 
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   border: 0;
   border-radius: 0.5rem;
   background: var(--color-accent);
@@ -240,6 +244,10 @@
 }
 
 .buttonSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   border: 1px solid var(--color-primary);
   border-radius: 0.5rem;
   background: var(--color-primary);
@@ -249,12 +257,22 @@
 }
 
 .buttonDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   border: 0;
   border-radius: 0.5rem;
   background: var(--color-danger-text);
   color: var(--color-surface);
   cursor: pointer;
   padding: 0.7rem 0.9rem;
+}
+
+.buttonIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .button:disabled,

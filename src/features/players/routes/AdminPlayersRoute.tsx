@@ -1,4 +1,5 @@
 import { type SyntheticEvent, useMemo, useRef, useState } from 'react';
+import { FaFloppyDisk, FaPlus, FaTrashCan, FaUpload } from 'react-icons/fa6';
 
 import type { Player } from '@/features/players/api/playersApi';
 import {
@@ -161,7 +162,8 @@ export function AdminPlayersRoute() {
           <h1 className={styles.title}>Giocatori</h1>
         </div>
         <button className={styles.button} onClick={handleNewPlayer} type="button">
-          Nuovo giocatore
+          <FaPlus aria-hidden="true" className={styles.buttonIcon} />
+          <span>Nuovo giocatore</span>
         </button>
       </header>
 
@@ -280,7 +282,10 @@ export function AdminPlayersRoute() {
               </label>
 
               <label className={styles.field}>
-                <span className={styles.label}>Foto profilo</span>
+                <span className={styles.label}>
+                  <FaUpload aria-hidden="true" className={styles.labelIcon} />
+                  <span>Foto profilo</span>
+                </span>
                 <input
                   accept="image/*"
                   className={styles.input}
@@ -297,7 +302,8 @@ export function AdminPlayersRoute() {
 
             <div className={styles.actions}>
               <button className={styles.button} disabled={isBusy} type="submit">
-                Salva giocatore
+                <FaFloppyDisk aria-hidden="true" className={styles.buttonIcon} />
+                <span>Salva giocatore</span>
               </button>
               {selectedPlayer ? (
                 <button
@@ -306,7 +312,8 @@ export function AdminPlayersRoute() {
                   onClick={() => void handleDelete()}
                   type="button"
                 >
-                  Elimina
+                  <FaTrashCan aria-hidden="true" className={styles.buttonIcon} />
+                  <span>Elimina</span>
                 </button>
               ) : null}
             </div>
