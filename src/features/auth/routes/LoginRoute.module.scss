@@ -1,0 +1,50 @@
+.page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.form {
+  display: grid;
+  width: min(100%, 24rem);
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #cedbd5;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  padding: 0.75rem 0.875rem;
+}
+
+.button {
+  border: 0;
+  border-radius: 0.5rem;
+  background: #0b1f1a;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0.8rem 1rem;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.error {
+  color: #a02525;
+  font-size: 0.875rem;
+}
