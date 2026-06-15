@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createSeason,
   createTournament,
+  deleteTournament,
   getSeasonSettings,
   listAdminTournaments,
   listSeasonsByTournament,
@@ -76,6 +77,17 @@ export function useUpdateTournamentStatusMutation() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: TournamentStatus }) =>
       updateTournamentStatus(id, status),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: tournamentQueryKeys.adminList() });
+    }
+  });
+}
+
+export function useDeleteTournamentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteTournament(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: tournamentQueryKeys.adminList() });
     }

@@ -14,7 +14,8 @@ import { LoginRoute } from '@/features/auth/routes/LoginRoute';
 import { AdminLayout } from '@/features/admin/layout/AdminLayout';
 import { AdminDashboardRoute } from '@/features/admin/routes/AdminDashboardRoute';
 import { AdminPlaceholderRoute } from '@/features/admin/routes/AdminPlaceholderRoute';
-import { AdminSeasonsRoute } from '@/features/seasons/routes/AdminSeasonsRoute';
+import { AdminPlayersRoute } from '@/features/players/routes/AdminPlayersRoute';
+import { AdminTeamsRoute } from '@/features/teams/routes/AdminTeamsRoute';
 import { AdminTournamentsRoute } from '@/features/tournaments/routes/AdminTournamentsRoute';
 
 function RouteShell() {
@@ -106,20 +107,12 @@ export const router = createBrowserRouter([
             element: <AdminTournamentsRoute />
           },
           {
-            path: 'tournaments/:tournamentId/seasons',
-            element: <AdminSeasonsRoute />
-          },
-          {
-            path: 'seasons/:seasonId/settings',
-            element: <AdminSeasonsRoute mode="settings" />
-          },
-          {
             path: 'teams',
-            element: <AdminPlaceholderRoute title="Squadre" />
+            element: <AdminTeamsRoute />
           },
           {
             path: 'players',
-            element: <AdminPlaceholderRoute title="Giocatori" />
+            element: <AdminPlayersRoute />
           },
           {
             path: 'matches',

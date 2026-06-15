@@ -3,8 +3,6 @@ export const appPaths = {
   auth: '/auth',
   admin: '/admin',
   adminTournaments: '/admin/tournaments',
-  adminTournamentSeasons: (tournamentId: string) => `/admin/tournaments/${tournamentId}/seasons`,
-  adminSeasonSettings: (seasonId: string) => `/admin/seasons/${seasonId}/settings`,
   adminTeams: '/admin/teams',
   adminPlayers: '/admin/players',
   adminMatches: '/admin/matches',
@@ -13,4 +11,4 @@ export const appPaths = {
   profile: '/profile'
 } as const;
 
-export type AppPath = Exclude<(typeof appPaths)[keyof typeof appPaths], (...args: never[]) => string>;
+export type AppPath = (typeof appPaths)[keyof typeof appPaths];

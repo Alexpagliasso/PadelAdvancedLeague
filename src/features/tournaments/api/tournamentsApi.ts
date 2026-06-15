@@ -90,11 +90,50 @@ export async function createTournament(input: CreateTournamentInput): Promise<To
     throw error;
   }
 
+  const { data: season, error: seasonError } = await supabase
+    .from('seasons')
+    .insert({
+      tournament_id: data.id,
+      name: 'Stagione principale',
+      slug: 'main',
+      status: 'active',
+      starts_on: null,
+      ends_on: null,
+      is_public: true
+    })
+    .select('*')
+    .single();
+
+  if (seasonError) {
+    await deleteTournament(data.id);
+    throw seasonError;
+  }
+
+  try {
+    await ensureSeasonSettings(season.id);
+  } catch (settingsError) {
+    await deleteTournament(data.id);
+    throw settingsError;
+  }
+
   return data;
 }
 
 export async function updateTournament(input: UpdateTournamentInput): Promise<Tournament> {
   const { id, ...values } = input;
+
+  if (values.status === 'active') {
+    const { error: deactivateError } = await supabase
+      .from('tournaments')
+      .update({ status: 'draft' })
+      .eq('status', 'active')
+      .neq('id', id);
+
+    if (deactivateError) {
+      throw deactivateError;
+    }
+  }
+
   const { data, error } = await supabase
     .from('tournaments')
     .update(values)
@@ -113,6 +152,18 @@ export async function updateTournamentStatus(
   id: string,
   status: TournamentStatus
 ): Promise<Tournament> {
+  if (status === 'active') {
+    const { error: deactivateError } = await supabase
+      .from('tournaments')
+      .update({ status: 'draft' })
+      .eq('status', 'active')
+      .neq('id', id);
+
+    if (deactivateError) {
+      throw deactivateError;
+    }
+  }
+
   const { data, error } = await supabase
     .from('tournaments')
     .update({ status })
@@ -125,6 +176,14 @@ export async function updateTournamentStatus(
   }
 
   return data;
+}
+
+export async function deleteTournament(id: string): Promise<void> {
+  const { error } = await supabase.from('tournaments').delete().eq('id', id);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function listSeasonsByTournament(tournamentId: string): Promise<Season[]> {
