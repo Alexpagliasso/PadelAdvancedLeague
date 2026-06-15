@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 
 import styles from '@/app/App.module.scss';
 import { appPaths } from '@/app/router/paths';
@@ -14,8 +14,10 @@ import { LoginRoute } from '@/features/auth/routes/LoginRoute';
 import { AdminLayout } from '@/features/admin/layout/AdminLayout';
 import { AdminDashboardRoute } from '@/features/admin/routes/AdminDashboardRoute';
 import { AdminPlaceholderRoute } from '@/features/admin/routes/AdminPlaceholderRoute';
+import { AdminCalendarRoute } from '@/features/matches/routes/AdminCalendarRoute';
 import { AdminMatchesRoute } from '@/features/matches/routes/AdminMatchesRoute';
 import { AdminPlayersRoute } from '@/features/players/routes/AdminPlayersRoute';
+import { PublicTournamentRoute } from '@/features/public/routes/PublicTournamentRoute';
 import { AdminStandingsRoute } from '@/features/standings/routes/AdminStandingsRoute';
 import { AdminTeamsRoute } from '@/features/teams/routes/AdminTeamsRoute';
 import { AdminTournamentsRoute } from '@/features/tournaments/routes/AdminTournamentsRoute';
@@ -47,24 +49,6 @@ function BootstrapRoute() {
   );
 }
 
-function HomeRedirectRoute() {
-  const { isAdmin, isAuthenticated, status } = useAuth();
-
-  if (status === 'loading') {
-    return (
-      <section className={styles.routeFrame}>
-        <p className={styles.routeMessage}>Loading...</p>
-      </section>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to={appPaths.auth} replace />;
-  }
-
-  return <Navigate to={isAdmin ? appPaths.admin : appPaths.profile} replace />;
-}
-
 function NotFoundRoute() {
   return (
     <section className={styles.routeFrame}>
@@ -80,7 +64,11 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomeRedirectRoute />
+        element: <PublicTournamentRoute />
+      },
+      {
+        path: 'tournament/:slug',
+        element: <PublicTournamentRoute />
       },
       {
         path: appPaths.auth.slice(1),
@@ -119,6 +107,14 @@ export const router = createBrowserRouter([
           {
             path: 'matches',
             element: <AdminMatchesRoute />
+          },
+          {
+            path: 'matches/:matchId/edit',
+            element: <AdminMatchesRoute />
+          },
+          {
+            path: 'calendar',
+            element: <AdminCalendarRoute />
           },
           {
             path: 'standings',

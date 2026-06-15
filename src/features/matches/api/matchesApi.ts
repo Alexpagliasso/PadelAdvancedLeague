@@ -215,3 +215,73 @@ export async function deleteMatch(id: string): Promise<void> {
     throw error;
   }
 }
+
+export async function generateRoundRobinCalendar(
+  seasonId: string,
+  teamIds: string[]
+): Promise<number> {
+  const uniqueTeamIds = Array.from(new Set(teamIds.filter(Boolean)));
+
+  if (uniqueTeamIds.length < 2) {
+    throw new Error('Servono almeno 2 squadre per generare il calendario.');
+  }
+
+  const { data: existingMatches, error: existingMatchesError } = await supabase
+    .from('matches')
+    .select('home_team_id, away_team_id')
+    .eq('season_id', seasonId);
+
+  if (existingMatchesError) {
+    throw existingMatchesError;
+  }
+
+  const existingPairs = new Set(
+    existingMatches.map((match) => [match.home_team_id, match.away_team_id].sort().join(':'))
+  );
+
+  const matchesToInsert: Database['public']['Tables']['matches']['Insert'][] = [];
+
+  for (let firstIndex = 0; firstIndex < uniqueTeamIds.length; firstIndex += 1) {
+    for (let secondIndex = firstIndex + 1; secondIndex < uniqueTeamIds.length; secondIndex += 1) {
+      const homeTeamId = uniqueTeamIds[firstIndex];
+      const awayTeamId = uniqueTeamIds[secondIndex];
+
+      if (!homeTeamId || !awayTeamId) {
+        continue;
+      }
+
+      const pairKey = [homeTeamId, awayTeamId].sort().join(':');
+
+      if (existingPairs.has(pairKey)) {
+        continue;
+      }
+
+      matchesToInsert.push({
+        season_id: seasonId,
+        phase: 'regular_season' as const,
+        home_team_id: homeTeamId,
+        away_team_id: awayTeamId,
+        scheduled_at: null,
+        venue: null,
+        status: 'scheduled' as const,
+        result_status: 'pending' as const,
+        home_sets_won: 0,
+        away_sets_won: 0,
+        notes: null
+      });
+      existingPairs.add(pairKey);
+    }
+  }
+
+  if (matchesToInsert.length === 0) {
+    return 0;
+  }
+
+  const { error } = await supabase.from('matches').insert(matchesToInsert);
+
+  if (error) {
+    throw error;
+  }
+
+  return matchesToInsert.length;
+}

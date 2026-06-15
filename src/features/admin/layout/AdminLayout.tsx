@@ -39,6 +39,11 @@ const navigationItems: NavigationItem[] = [
     isActive: (pathname) => pathname.startsWith(appPaths.adminMatches)
   },
   {
+    label: 'Calendario',
+    to: appPaths.adminCalendar,
+    isActive: (pathname) => pathname.startsWith(appPaths.adminCalendar)
+  },
+  {
     label: 'Classifica',
     to: appPaths.adminStandings,
     isActive: (pathname) => pathname.startsWith(appPaths.adminStandings)

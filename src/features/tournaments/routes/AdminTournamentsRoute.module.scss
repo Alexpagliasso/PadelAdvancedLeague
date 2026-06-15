@@ -124,6 +124,60 @@
   gap: 0.5rem;
 }
 
+.detailBlock {
+  display: grid;
+  gap: 1rem;
+  border-top: 1px solid #d9e4df;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.badge {
+  border-radius: 999px;
+  background: #eaf5ef;
+  color: #0b1f1a;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  white-space: nowrap;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.teamList {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teamItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.teamItem span {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: right;
+}
+
 .button {
   border: 0;
   border-radius: 0.5rem;
@@ -167,5 +221,16 @@
   .layout,
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .header,
+  .detailHeader,
+  .teamItem {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .teamItem span {
+    text-align: left;
   }
 }

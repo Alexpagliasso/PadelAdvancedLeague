@@ -1,0 +1,197 @@
+.page {
+  min-height: 100dvh;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.hero {
+  display: grid;
+  gap: 2rem;
+  background: #0b1f1a;
+  color: #ffffff;
+  padding: 1rem 1rem 2rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 72rem;
+}
+
+.adminLink {
+  border: 1px solid currentcolor;
+  border-radius: 0.5rem;
+  color: inherit;
+  padding: 0.6rem 0.8rem;
+  text-decoration: none;
+}
+
+.heroContent {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 72rem;
+}
+
+.heroContent h1 {
+  margin: 0;
+  font-size: clamp(2rem, 8vw, 4rem);
+  line-height: 1;
+}
+
+.heroContent p {
+  max-width: 42rem;
+  margin: 0;
+  color: rgb(255 255 255 / 78%);
+  line-height: 1.6;
+}
+
+.eyebrow {
+  color: rgb(255 255 255 / 70%);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.section {
+  display: grid;
+  gap: 1rem;
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 1rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.sectionHeader span,
+.muted {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.teamGrid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.teamCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 0.85rem;
+}
+
+.teamLogo,
+.logoFallback {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+}
+
+.teamLogo {
+  object-fit: cover;
+}
+
+.logoFallback {
+  display: grid;
+  background: #eaf5ef;
+  color: #0b1f1a;
+  font-weight: 700;
+  place-items: center;
+  text-transform: uppercase;
+}
+
+.matchList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.matchCard {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 0.85rem;
+}
+
+.matchCard span,
+.matchCard small,
+.matchDate {
+  color: var(--color-muted);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #edf2ef;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.table th {
+  color: var(--color-muted);
+}
+
+.emptyState {
+  display: grid;
+  gap: 1rem;
+  min-height: 100dvh;
+  place-content: center;
+  padding: 1rem;
+  text-align: center;
+}
+
+.emptyState h1,
+.emptyState p {
+  margin: 0;
+}
+
+.error {
+  color: #a02525;
+  padding: 1rem;
+}
+
+@media (min-width: 720px) {
+  .hero {
+    padding: 1.25rem 1.5rem 3rem;
+  }
+
+  .section {
+    padding: 1.5rem;
+  }
+
+  .teamGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

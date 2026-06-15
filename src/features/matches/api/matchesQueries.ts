@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createMatch,
   deleteMatch,
+  generateRoundRobinCalendar,
   listMatchesBySeason,
   updateMatch,
   type SaveMatchInput,
@@ -53,6 +54,25 @@ export function useDeleteMatchMutation(seasonId: string | null) {
 
   return useMutation({
     mutationFn: (id: string) => deleteMatch(id),
+    onSuccess: async () => {
+      if (seasonId) {
+        await queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) });
+      }
+    }
+  });
+}
+
+export function useGenerateCalendarMutation(seasonId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ teamIds }: { teamIds: string[] }) => {
+      if (!seasonId) {
+        throw new Error('Seleziona un torneo attivo prima di generare il calendario.');
+      }
+
+      return generateRoundRobinCalendar(seasonId, teamIds);
+    },
     onSuccess: async () => {
       if (seasonId) {
         await queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) });

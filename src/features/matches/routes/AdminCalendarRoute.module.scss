@@ -1,0 +1,166 @@
+.page {
+  padding: 1rem;
+}
+
+.header,
+.toolbar,
+.rounds {
+  margin: 0 auto;
+  max-width: 86rem;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.toolbar,
+.rounds {
+  display: grid;
+  gap: 1rem;
+}
+
+.toolbar {
+  margin-bottom: 1rem;
+}
+
+.panel {
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.panelTitle {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.select {
+  width: 100%;
+  border: 1px solid #cbd8d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  padding: 0.7rem 0.8rem;
+}
+
+.button {
+  border: 0;
+  border-radius: 0.5rem;
+  background: #0b1f1a;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.mobileList {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.matchCard {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  color: var(--color-text);
+  padding: 0.75rem;
+  text-decoration: none;
+}
+
+.matchCard span {
+  color: var(--color-muted);
+}
+
+.matchCardPlayed {
+  border-color: #83b99b;
+  background: #eaf5ef;
+}
+
+.tableWrap {
+  display: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #edf2ef;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.table a {
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tableRowPlayed {
+  background: #eaf5ef;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  margin: 0 auto 1rem;
+  max-width: 86rem;
+  color: #a02525;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 860px) {
+  .page {
+    padding: 1.5rem;
+  }
+
+  .field {
+    max-width: 28rem;
+  }
+
+  .mobileList {
+    display: none;
+  }
+
+  .tableWrap {
+    display: block;
+    overflow-x: auto;
+  }
+}

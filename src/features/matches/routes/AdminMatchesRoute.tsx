@@ -1,4 +1,5 @@
 import { type SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import type { MatchStatus } from '@/lib/supabase/types';
 import type { MatchWithSets, MatchSetInput } from '@/features/matches/api/matchesApi';
@@ -207,6 +208,7 @@ function matchToForm(match: MatchWithSets | null): MatchFormState {
 }
 
 export function AdminMatchesRoute() {
+  const params = useParams<{ matchId?: string }>();
   const tournamentsQuery = useAdminTournamentsQuery();
 
   const tournamentOptions = useMemo(
@@ -263,10 +265,28 @@ export function AdminMatchesRoute() {
   }, [selectedTournamentId, tournamentOptions]);
 
   useEffect(() => {
+    if (params.matchId) {
+      return;
+    }
+
     setSelectedMatchId(null);
     setForm(emptyMatchForm);
     setFormError(null);
-  }, [selectedTournamentId]);
+  }, [params.matchId, selectedTournamentId]);
+
+  useEffect(() => {
+    if (!params.matchId || !matches.some((match) => match.id === params.matchId)) {
+      return;
+    }
+
+    const match = matches.find((item) => item.id === params.matchId) ?? null;
+
+    if (match) {
+      setSelectedMatchId(match.id);
+      setForm(matchToForm(match));
+      setFormError(null);
+    }
+  }, [matches, params.matchId]);
 
   const getTeamName = (teamId: string): string => {
     const team = teams.find((item) => item.id === teamId);

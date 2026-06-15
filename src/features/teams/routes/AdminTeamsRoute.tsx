@@ -281,6 +281,8 @@ export function AdminTeamsRoute() {
                   <span>
                     <strong>{team.name}</strong>
                     <small>
+                      {selectedTournament?.name ?? 'Torneo'}
+                      {' · '}
                       {team.members.length > 0
                         ? team.members.map((member) => getPlayerName(member.player_id)).join(' / ')
                         : 'Nessun giocatore'}
@@ -299,6 +301,25 @@ export function AdminTeamsRoute() {
 
           <form className={styles.form} onSubmit={(event) => void handleSubmit(event)}>
             <div className={styles.grid}>
+              <label className={styles.field}>
+                <span className={styles.label}>Torneo</span>
+                <select
+                  className={styles.select}
+                  onChange={(event) => {
+                    setSelectedTournamentId(event.target.value || null);
+                  }}
+                  required
+                  value={selectedTournamentId ?? ''}
+                >
+                  <option value="">Seleziona torneo</option>
+                  {tournamentOptions.map((tournament) => (
+                    <option key={tournament.id} value={tournament.id}>
+                      {tournament.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <label className={styles.field}>
                 <span className={styles.label}>Nome squadra</span>
                 <input

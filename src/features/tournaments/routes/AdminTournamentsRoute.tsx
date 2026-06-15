@@ -1,5 +1,10 @@
 import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import { usePlayersQuery } from '@/features/players/api/playersQueries';
+import {
+  useCreateTeamMutation,
+  useTeamsBySeasonQuery
+} from '@/features/teams/api/teamsQueries';
 import {
   useAdminTournamentsQuery,
   useCreateTournamentMutation,
@@ -20,12 +25,26 @@ type TournamentFormState = {
   isPublic: boolean;
 };
 
+type QuickTeamFormState = {
+  name: string;
+  slug: string;
+  playerOneId: string;
+  playerTwoId: string;
+};
+
 const emptyTournamentForm: TournamentFormState = {
   name: '',
   slug: '',
   description: '',
   status: 'draft',
   isPublic: false
+};
+
+const emptyQuickTeamForm: QuickTeamFormState = {
+  name: '',
+  slug: '',
+  playerOneId: '',
+  playerTwoId: ''
 };
 
 function slugify(value: string): string {
@@ -64,6 +83,7 @@ function tournamentToForm(tournament: TournamentWithSeasons | null): TournamentF
 
 export function AdminTournamentsRoute() {
   const tournamentsQuery = useAdminTournamentsQuery();
+  const playersQuery = usePlayersQuery();
   const createTournamentMutation = useCreateTournamentMutation();
   const updateTournamentMutation = useUpdateTournamentMutation();
   const updateTournamentStatusMutation = useUpdateTournamentStatusMutation();
@@ -72,17 +92,28 @@ export function AdminTournamentsRoute() {
 
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const [tournamentForm, setTournamentForm] = useState<TournamentFormState>(emptyTournamentForm);
+  const [quickTeamForm, setQuickTeamForm] = useState<QuickTeamFormState>(emptyQuickTeamForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [teamFormError, setTeamFormError] = useState<string | null>(null);
 
   const tournaments = useMemo(() => tournamentsQuery.data ?? [], [tournamentsQuery.data]);
+  const players = useMemo(() => playersQuery.data ?? [], [playersQuery.data]);
   const selectedTournament =
     tournaments.find((tournament) => tournament.id === selectedTournamentId) ?? null;
+  const selectedMainSeasonId =
+    selectedTournament?.seasons.find((season) => season.slug === 'main')?.id ??
+    selectedTournament?.seasons[0]?.id ??
+    null;
+  const teamsQuery = useTeamsBySeasonQuery(selectedMainSeasonId);
+  const createTeamMutation = useCreateTeamMutation(selectedMainSeasonId);
+  const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
 
   const isBusy =
     createTournamentMutation.isPending ||
     updateTournamentMutation.isPending ||
     updateTournamentStatusMutation.isPending ||
-    deleteTournamentMutation.isPending;
+    deleteTournamentMutation.isPending ||
+    createTeamMutation.isPending;
 
   useEffect(() => {
     if (!selectedTournamentId && !didAutoSelectTournament.current && tournaments.length > 0) {
@@ -93,13 +124,54 @@ export function AdminTournamentsRoute() {
 
   useEffect(() => {
     setTournamentForm(tournamentToForm(selectedTournament));
+    setQuickTeamForm(emptyQuickTeamForm);
+    setTeamFormError(null);
   }, [selectedTournament]);
 
   const handleCreateTournament = () => {
     didAutoSelectTournament.current = true;
     setSelectedTournamentId(null);
     setTournamentForm(emptyTournamentForm);
+    setQuickTeamForm(emptyQuickTeamForm);
     setFormError(null);
+    setTeamFormError(null);
+  };
+
+  const getPlayerName = (playerId: string): string => {
+    const player = players.find((item) => item.id === playerId);
+    return player?.display_name ?? 'Giocatore';
+  };
+
+  const handleSubmitQuickTeam = async (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setTeamFormError(null);
+
+    if (!selectedMainSeasonId) {
+      setTeamFormError('Questo torneo non ha una stagione principale disponibile.');
+      return;
+    }
+
+    if (
+      quickTeamForm.playerOneId &&
+      quickTeamForm.playerTwoId &&
+      quickTeamForm.playerOneId === quickTeamForm.playerTwoId
+    ) {
+      setTeamFormError('Lo stesso giocatore non puo occupare entrambe le posizioni.');
+      return;
+    }
+
+    try {
+      await createTeamMutation.mutateAsync({
+        season_id: selectedMainSeasonId,
+        name: quickTeamForm.name,
+        slug: quickTeamForm.slug,
+        logo_url: null,
+        player_ids: [quickTeamForm.playerOneId, quickTeamForm.playerTwoId].filter(Boolean)
+      });
+      setQuickTeamForm(emptyQuickTeamForm);
+    } catch (error) {
+      setTeamFormError(getErrorMessage(error));
+    }
   };
 
   const handleSubmitTournament = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -335,6 +407,149 @@ export function AdminTournamentsRoute() {
               ) : null}
             </div>
           </form>
+
+          {selectedTournament ? (
+            <div className={styles.detailBlock}>
+              <div className={styles.detailHeader}>
+                <div>
+                  <h2 className={styles.panelTitle}>Squadre del torneo</h2>
+                  <p className={styles.muted}>
+                    Le squadre vengono salvate automaticamente nella season principale.
+                  </p>
+                </div>
+                <span className={styles.badge}>{teams.length} squadre</span>
+              </div>
+
+              {teamsQuery.isLoading ? <p className={styles.muted}>Caricamento squadre...</p> : null}
+              {teamsQuery.isError ? (
+                <p className={styles.error}>{getErrorMessage(teamsQuery.error)}</p>
+              ) : null}
+              {!teamsQuery.isLoading && teams.length === 0 ? (
+                <p className={styles.muted}>Nessuna squadra collegata a questo torneo.</p>
+              ) : null}
+
+              <ul className={styles.teamList}>
+                {teams.map((team) => (
+                  <li className={styles.teamItem} key={team.id}>
+                    <strong>{team.name}</strong>
+                    <span>
+                      {team.members.length > 0
+                        ? team.members.map((member) => getPlayerName(member.player_id)).join(' / ')
+                        : 'Nessun giocatore'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <form
+                className={styles.form}
+                onSubmit={(event) => void handleSubmitQuickTeam(event)}
+              >
+                <h3 className={styles.sectionTitle}>Aggiungi squadra</h3>
+                <div className={styles.grid}>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Nome squadra</span>
+                    <input
+                      className={styles.input}
+                      onBlur={() => {
+                        if (!quickTeamForm.slug) {
+                          setQuickTeamForm((current) => ({
+                            ...current,
+                            slug: slugify(current.name)
+                          }));
+                        }
+                      }}
+                      onChange={(event) => {
+                        setQuickTeamForm((current) => ({
+                          ...current,
+                          name: event.target.value
+                        }));
+                      }}
+                      required
+                      value={quickTeamForm.name}
+                    />
+                  </label>
+
+                  <label className={styles.field}>
+                    <span className={styles.label}>Slug</span>
+                    <input
+                      className={styles.input}
+                      onChange={(event) => {
+                        setQuickTeamForm((current) => ({
+                          ...current,
+                          slug: slugify(event.target.value)
+                        }));
+                      }}
+                      required
+                      value={quickTeamForm.slug}
+                    />
+                  </label>
+
+                  <label className={styles.field}>
+                    <span className={styles.label}>Giocatore 1</span>
+                    <select
+                      className={styles.select}
+                      onChange={(event) => {
+                        setQuickTeamForm((current) => ({
+                          ...current,
+                          playerOneId: event.target.value
+                        }));
+                      }}
+                      value={quickTeamForm.playerOneId}
+                    >
+                      <option value="">Seleziona giocatore</option>
+                      {players.map((player) => (
+                        <option
+                          disabled={player.id === quickTeamForm.playerTwoId}
+                          key={player.id}
+                          value={player.id}
+                        >
+                          {player.display_name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={styles.field}>
+                    <span className={styles.label}>Giocatore 2</span>
+                    <select
+                      className={styles.select}
+                      onChange={(event) => {
+                        setQuickTeamForm((current) => ({
+                          ...current,
+                          playerTwoId: event.target.value
+                        }));
+                      }}
+                      value={quickTeamForm.playerTwoId}
+                    >
+                      <option value="">Seleziona giocatore</option>
+                      {players.map((player) => (
+                        <option
+                          disabled={player.id === quickTeamForm.playerOneId}
+                          key={player.id}
+                          value={player.id}
+                        >
+                          {player.display_name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {teamFormError ? <p className={styles.error}>{teamFormError}</p> : null}
+
+                <div className={styles.actions}>
+                  <button
+                    className={styles.buttonSecondary}
+                    disabled={isBusy || !selectedMainSeasonId}
+                    type="submit"
+                  >
+                    Aggiungi squadra
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : null}
         </section>
       </div>
     </section>
