@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   useAdminTournamentsQuery,
@@ -68,6 +68,7 @@ export function AdminTournamentsRoute() {
   const updateTournamentMutation = useUpdateTournamentMutation();
   const updateTournamentStatusMutation = useUpdateTournamentStatusMutation();
   const deleteTournamentMutation = useDeleteTournamentMutation();
+  const didAutoSelectTournament = useRef(false);
 
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const [tournamentForm, setTournamentForm] = useState<TournamentFormState>(emptyTournamentForm);
@@ -84,7 +85,8 @@ export function AdminTournamentsRoute() {
     deleteTournamentMutation.isPending;
 
   useEffect(() => {
-    if (!selectedTournamentId && tournaments.length > 0) {
+    if (!selectedTournamentId && !didAutoSelectTournament.current && tournaments.length > 0) {
+      didAutoSelectTournament.current = true;
       setSelectedTournamentId(tournaments[0]?.id ?? null);
     }
   }, [selectedTournamentId, tournaments]);
@@ -94,6 +96,7 @@ export function AdminTournamentsRoute() {
   }, [selectedTournament]);
 
   const handleCreateTournament = () => {
+    didAutoSelectTournament.current = true;
     setSelectedTournamentId(null);
     setTournamentForm(emptyTournamentForm);
     setFormError(null);
@@ -116,13 +119,13 @@ export function AdminTournamentsRoute() {
         return;
       }
 
-      const created = await createTournamentMutation.mutateAsync({
+      await createTournamentMutation.mutateAsync({
         name: tournamentForm.name,
         slug: tournamentForm.slug,
         description: tournamentForm.description.trim() || null,
         is_public: tournamentForm.isPublic
       });
-      setSelectedTournamentId(created.id);
+      handleCreateTournament();
     } catch (error) {
       setFormError(getErrorMessage(error));
     }

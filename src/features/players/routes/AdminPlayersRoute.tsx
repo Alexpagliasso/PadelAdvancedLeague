@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useMemo, useState } from 'react';
+import { type SyntheticEvent, useMemo, useRef, useState } from 'react';
 
 import type { Player } from '@/features/players/api/playersApi';
 import {
@@ -65,6 +65,7 @@ export function AdminPlayersRoute() {
   const updatePlayerMutation = useUpdatePlayerMutation();
   const deletePlayerMutation = useDeletePlayerMutation();
   const uploadPhotoMutation = useUploadPlayerPhotoMutation();
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   const players = useMemo(() => playersQuery.data ?? [], [playersQuery.data]);
   const profiles = useMemo(() => profilesQuery.data ?? [], [profilesQuery.data]);
@@ -85,6 +86,9 @@ export function AdminPlayersRoute() {
     setSelectedPlayerId(null);
     setForm(emptyPlayerForm);
     setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
     setFormError(null);
   };
 
@@ -92,6 +96,9 @@ export function AdminPlayersRoute() {
     setSelectedPlayerId(player.id);
     setForm(playerToForm(player));
     setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
     setFormError(null);
   };
 
@@ -111,12 +118,21 @@ export function AdminPlayersRoute() {
 
       if (selectedPlayer) {
         await updatePlayerMutation.mutateAsync({ id: selectedPlayer.id, ...payload });
+        setForm({
+          profileId: payload.profile_id ?? '',
+          firstName: payload.first_name,
+          lastName: payload.last_name,
+          displayName: payload.display_name,
+          photoUrl: payload.photo_url ?? ''
+        });
+        setPhotoFile(null);
+        if (photoInputRef.current) {
+          photoInputRef.current.value = '';
+        }
       } else {
-        const created = await createPlayerMutation.mutateAsync(payload);
-        setSelectedPlayerId(created.id);
+        await createPlayerMutation.mutateAsync(payload);
+        handleNewPlayer();
       }
-
-      setPhotoFile(null);
     } catch (error) {
       setFormError(getErrorMessage(error));
     }
@@ -271,6 +287,7 @@ export function AdminPlayersRoute() {
                   onChange={(event) => {
                     setPhotoFile(event.target.files?.[0] ?? null);
                   }}
+                  ref={photoInputRef}
                   type="file"
                 />
               </label>

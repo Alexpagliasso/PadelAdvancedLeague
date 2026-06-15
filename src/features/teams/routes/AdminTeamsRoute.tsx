@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePlayersQuery } from '@/features/players/api/playersQueries';
 import { useAdminTournamentsQuery } from '@/features/tournaments/api/tournamentsQueries';
@@ -101,6 +101,7 @@ export function AdminTeamsRoute() {
   const updateTeamMutation = useUpdateTeamMutation(selectedSeasonId);
   const deleteTeamMutation = useDeleteTeamMutation(selectedSeasonId);
   const uploadLogoMutation = useUploadTeamLogoMutation();
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
   const selectedTeam = teams.find((team) => team.id === selectedTeamId) ?? null;
@@ -127,6 +128,9 @@ export function AdminTeamsRoute() {
     setSelectedTeamId(null);
     setForm(emptyTeamForm);
     setLogoFile(null);
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
     setFormError(null);
   }, [selectedTournamentId]);
 
@@ -139,6 +143,9 @@ export function AdminTeamsRoute() {
     setSelectedTeamId(null);
     setForm(emptyTeamForm);
     setLogoFile(null);
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
     setFormError(null);
   };
 
@@ -146,6 +153,9 @@ export function AdminTeamsRoute() {
     setSelectedTeamId(team.id);
     setForm(teamToForm(team));
     setLogoFile(null);
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
     setFormError(null);
   };
 
@@ -175,12 +185,21 @@ export function AdminTeamsRoute() {
 
       if (selectedTeam) {
         await updateTeamMutation.mutateAsync({ id: selectedTeam.id, ...payload });
+        setForm({
+          name: payload.name,
+          slug: payload.slug,
+          logoUrl: payload.logo_url ?? '',
+          playerOneId: payload.player_ids[0] ?? '',
+          playerTwoId: payload.player_ids[1] ?? ''
+        });
+        setLogoFile(null);
+        if (logoInputRef.current) {
+          logoInputRef.current.value = '';
+        }
       } else {
-        const created = await createTeamMutation.mutateAsync(payload);
-        setSelectedTeamId(created.id);
+        await createTeamMutation.mutateAsync(payload);
+        handleNewTeam();
       }
-
-      setLogoFile(null);
     } catch (error) {
       setFormError(getErrorMessage(error));
     }
@@ -353,6 +372,7 @@ export function AdminTeamsRoute() {
                   onChange={(event) => {
                     setLogoFile(event.target.files?.[0] ?? null);
                   }}
+                  ref={logoInputRef}
                   type="file"
                 />
               </label>
