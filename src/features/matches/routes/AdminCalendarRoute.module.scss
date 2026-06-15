@@ -84,6 +84,16 @@
   opacity: 0.65;
 }
 
+.successMessage {
+  border: 1px solid #83b99b;
+  border-radius: 0.5rem;
+  background: #eaf5ef;
+  color: #0b1f1a;
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 0.75rem;
+}
+
 .mobileList {
   display: grid;
   gap: 0.5rem;
@@ -106,6 +116,34 @@
 .matchCardPlayed {
   border-color: #83b99b;
   background: #eaf5ef;
+}
+
+.badge {
+  width: max-content;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+}
+
+.badge_scheduled {
+  background: #eef3f0;
+  color: #47524d;
+}
+
+.badge_played {
+  background: #d8efe2;
+  color: #0b5a32;
+}
+
+.badge_postponed {
+  background: #fff1c7;
+  color: #715200;
+}
+
+.badge_cancelled {
+  background: #f8d7da;
+  color: #842029;
 }
 
 .tableWrap {

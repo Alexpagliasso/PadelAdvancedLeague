@@ -5,8 +5,8 @@ import type { MatchStatus } from '@/lib/supabase/types';
 import type { MatchWithSets, MatchSetInput } from '@/features/matches/api/matchesApi';
 import {
   useCreateMatchMutation,
-  useDeleteMatchMutation,
   useMatchesBySeasonQuery,
+  useResetMatchResultMutation,
   useUpdateMatchMutation
 } from '@/features/matches/api/matchesQueries';
 import { useTeamsBySeasonQuery } from '@/features/teams/api/teamsQueries';
@@ -19,7 +19,8 @@ type MatchFormState = {
   awayTeamId: string;
   date: string;
   time: string;
-  venue: string;
+  venueOption: string;
+  customVenue: string;
   status: MatchStatus;
   set1Home: string;
   set1Away: string;
@@ -34,7 +35,8 @@ const emptyMatchForm: MatchFormState = {
   awayTeamId: '',
   date: '',
   time: '',
-  venue: '',
+  venueOption: 'GPadel Borgaro',
+  customVenue: '',
   status: 'scheduled',
   set1Home: '',
   set1Away: '',
@@ -51,6 +53,19 @@ const timeSlots = Array.from({ length: 48 }, (_, index) => {
   const minutes = index % 2 === 0 ? '00' : '30';
   return `${hour}:${minutes}`;
 });
+
+const venueOptions = [
+  'GPadel Borgaro',
+  'GPadel Leinì',
+  'GPadel Borgo Vittoria',
+  'GPadel Borgo Po',
+  'GPadel Rivalta/Bruino',
+  'GPadel Torino',
+  'GPadel Torrazza',
+  'Altro'
+] as const;
+
+const knownVenueOptions = venueOptions.filter((option) => option !== 'Altro');
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -86,6 +101,13 @@ function getScheduledAt(date: string, time: string): string | null {
   }
 
   return `${date}T${time || '00:00'}:00`;
+}
+
+function getVenueFromForm(form: MatchFormState): string | null {
+  const venue =
+    form.venueOption === 'Altro' ? form.customVenue.trim() : form.venueOption.trim();
+
+  return venue || null;
 }
 
 function isValidHalfHourTime(time: string): boolean {
@@ -125,6 +147,15 @@ function getSetsLabel(match: MatchWithSets): string {
     .sort((first, second) => first.set_number - second.set_number)
     .map((set) => `${set.home_games.toString()}-${set.away_games.toString()}`)
     .join(', ');
+}
+
+function getDetailedSets(match: MatchWithSets): string[] {
+  return [...match.sets]
+    .sort((first, second) => first.set_number - second.set_number)
+    .map(
+      (set) =>
+        `Set ${set.set_number.toString()}: ${set.home_games.toString()}-${set.away_games.toString()}`
+    );
 }
 
 function parseSetScore(
@@ -190,13 +221,16 @@ function matchToForm(match: MatchWithSets | null): MatchFormState {
   const set1 = getSet(1);
   const set2 = getSet(2);
   const set3 = getSet(3);
+  const venue = match.venue ?? '';
+  const isKnownVenue = knownVenueOptions.some((option) => option === venue);
 
   return {
     homeTeamId: match.home_team_id,
     awayTeamId: match.away_team_id,
     date: getDatePart(match.scheduled_at),
     time: getTimePart(match.scheduled_at),
-    venue: match.venue ?? '',
+    venueOption: isKnownVenue || !venue ? venue || 'GPadel Borgaro' : 'Altro',
+    customVenue: isKnownVenue ? '' : venue,
     status: match.status,
     set1Home: set1?.home_games.toString() ?? '',
     set1Away: set1?.away_games.toString() ?? '',
@@ -240,7 +274,7 @@ export function AdminMatchesRoute() {
   const matchesQuery = useMatchesBySeasonQuery(selectedSeasonId);
   const createMatchMutation = useCreateMatchMutation(selectedSeasonId);
   const updateMatchMutation = useUpdateMatchMutation(selectedSeasonId);
-  const deleteMatchMutation = useDeleteMatchMutation(selectedSeasonId);
+  const resetMatchResultMutation = useResetMatchResultMutation(selectedSeasonId);
 
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
   const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
@@ -249,7 +283,7 @@ export function AdminMatchesRoute() {
   const isBusy =
     createMatchMutation.isPending ||
     updateMatchMutation.isPending ||
-    deleteMatchMutation.isPending;
+    resetMatchResultMutation.isPending;
 
   useEffect(() => {
     if (selectedTournamentId && tournamentOptions.some((option) => option.id === selectedTournamentId)) {
@@ -327,7 +361,9 @@ export function AdminMatchesRoute() {
     try {
       const sets = getSetsFromForm(form);
 
-      if (!selectedMatch && sets.length > 0 && (!form.date || !form.time || !form.venue.trim())) {
+      const venue = getVenueFromForm(form);
+
+      if (sets.length > 0 && (!form.date || !form.time || !venue)) {
         setFormError('Se inserisci un risultato, data, ora e luogo sono obbligatori.');
         return;
       }
@@ -337,7 +373,7 @@ export function AdminMatchesRoute() {
         home_team_id: form.homeTeamId,
         away_team_id: form.awayTeamId,
         scheduled_at: getScheduledAt(form.date, form.time),
-        venue: form.venue.trim() || null,
+        venue,
         status: form.status,
         sets
       };
@@ -357,16 +393,33 @@ export function AdminMatchesRoute() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleResetResult = async () => {
     if (!selectedMatch) {
       return;
     }
 
     setFormError(null);
 
+    const shouldReset = window.confirm(
+      'Il risultato verrà annullato ma la partita rimarrà nel calendario. Continuare?'
+    );
+
+    if (!shouldReset) {
+      return;
+    }
+
     try {
-      await deleteMatchMutation.mutateAsync(selectedMatch.id);
-      handleNewMatch();
+      await resetMatchResultMutation.mutateAsync(selectedMatch.id);
+      setForm((current) => ({
+        ...current,
+        status: 'scheduled',
+        set1Home: '',
+        set1Away: '',
+        set2Home: '',
+        set2Away: '',
+        set3Home: '',
+        set3Away: ''
+      }));
     } catch (error) {
       setFormError(getErrorMessage(error));
     }
@@ -485,14 +538,37 @@ export function AdminMatchesRoute() {
 
               <label className={styles.field}>
                 <span className={styles.label}>Luogo</span>
-                <input
-                  className={styles.input}
+                <select
+                  className={styles.select}
                   onChange={(event) => {
-                    setForm((current) => ({ ...current, venue: event.target.value }));
+                    setForm((current) => ({
+                      ...current,
+                      venueOption: event.target.value,
+                      customVenue: event.target.value === 'Altro' ? current.customVenue : ''
+                    }));
                   }}
-                  value={form.venue}
-                />
+                  value={form.venueOption}
+                >
+                  {venueOptions.map((venue) => (
+                    <option key={venue} value={venue}>
+                      {venue}
+                    </option>
+                  ))}
+                </select>
               </label>
+
+              {form.venueOption === 'Altro' ? (
+                <label className={styles.field}>
+                  <span className={styles.label}>Altro luogo</span>
+                  <input
+                    className={styles.input}
+                    onChange={(event) => {
+                      setForm((current) => ({ ...current, customVenue: event.target.value }));
+                    }}
+                    value={form.customVenue}
+                  />
+                </label>
+              ) : null}
 
               <label className={styles.field}>
                 <span className={styles.label}>Stato</span>
@@ -584,18 +660,27 @@ export function AdminMatchesRoute() {
 
             {formError ? <p className={styles.error}>{formError}</p> : null}
 
+            {selectedMatch?.result_status === 'official' ? (
+              <div className={styles.readOnlyResult}>
+                <strong>Risultato salvato</strong>
+                {getDetailedSets(selectedMatch).map((setLabel) => (
+                  <span key={setLabel}>{setLabel}</span>
+                ))}
+              </div>
+            ) : null}
+
             <div className={styles.actions}>
               <button className={styles.button} disabled={isBusy || !selectedSeasonId} type="submit">
                 Salva partita
               </button>
-              {selectedMatch ? (
+              {selectedMatch?.result_status === 'official' ? (
                 <button
-                  className={styles.buttonDanger}
+                  className={styles.buttonSecondary}
                   disabled={isBusy}
-                  onClick={() => void handleDelete()}
+                  onClick={() => void handleResetResult()}
                   type="button"
                 >
-                  Elimina
+                  Annulla risultato
                 </button>
               ) : null}
             </div>

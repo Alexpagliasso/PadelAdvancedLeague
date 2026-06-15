@@ -40,6 +40,44 @@ function formatDateTime(value: string | null): string {
   }).format(new Date(value));
 }
 
+function formatDate(value: string | null): string {
+  if (!value) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('it-IT', {
+    dateStyle: 'medium'
+  }).format(new Date(value));
+}
+
+function getResultLabel(match: MatchWithSets, homeTeamName: string, awayTeamName: string): string {
+  if (match.result_status !== 'official' || match.status !== 'played') {
+    return 'Da disputare';
+  }
+
+  return `${homeTeamName} ${match.home_sets_won.toString()} - ${match.away_sets_won.toString()} ${awayTeamName}`;
+}
+
+function getStatusLabel(status: MatchWithSets['status']): string {
+  const labels: Record<MatchWithSets['status'], string> = {
+    scheduled: 'Scheduled',
+    played: 'Played',
+    postponed: 'Postponed',
+    cancelled: 'Cancelled'
+  };
+
+  return labels[status];
+}
+
+function getCalendarGeneratedAt(matches: MatchWithSets[]): string | null {
+  if (matches.length === 0) {
+    return null;
+  }
+
+  return [...matches].sort((first, second) => first.created_at.localeCompare(second.created_at))[0]
+    ?.created_at ?? null;
+}
+
 function getRounds(matches: MatchWithSets[], teamsCount: number): CalendarRound[] {
   const roundSize = Math.max(1, Math.floor(teamsCount / 2));
   const sortedMatches = [...matches].sort((first, second) => {
@@ -92,6 +130,8 @@ export function AdminCalendarRoute() {
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
   const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
   const rounds = useMemo(() => getRounds(matches, teams.length), [matches, teams.length]);
+  const calendarGeneratedAt = useMemo(() => getCalendarGeneratedAt(matches), [matches]);
+  const isCalendarGenerated = calendarGeneratedAt !== null;
 
   useEffect(() => {
     if (selectedTournamentId && tournamentOptions.some((option) => option.id === selectedTournamentId)) {
@@ -113,6 +153,19 @@ export function AdminCalendarRoute() {
 
   const handleGenerateCalendar = async () => {
     setMessage(null);
+
+    if (isCalendarGenerated) {
+      setMessage('Il calendario è già stato generato e non può essere modificato.');
+      return;
+    }
+
+    const shouldGenerate = window.confirm(
+      'Una volta generato il calendario non sarà più possibile rigenerarlo. Continuare?'
+    );
+
+    if (!shouldGenerate) {
+      return;
+    }
 
     try {
       const createdCount = await generateCalendarMutation.mutateAsync({
@@ -137,7 +190,12 @@ export function AdminCalendarRoute() {
         </div>
         <button
           className={styles.button}
-          disabled={!selectedSeasonId || teams.length < 2 || generateCalendarMutation.isPending}
+          disabled={
+            !selectedSeasonId ||
+            teams.length < 2 ||
+            isCalendarGenerated ||
+            generateCalendarMutation.isPending
+          }
           onClick={() => void handleGenerateCalendar()}
           type="button"
         >
@@ -164,6 +222,15 @@ export function AdminCalendarRoute() {
             ))}
           </select>
         </label>
+        {calendarGeneratedAt ? (
+          <p className={styles.successMessage}>Calendario generato il {formatDate(calendarGeneratedAt)}</p>
+        ) : null}
+        {isCalendarGenerated ? (
+          <p className={styles.muted}>Il calendario è già stato generato e non può essere modificato.</p>
+        ) : null}
+        {!isCalendarGenerated && teams.length < 2 ? (
+          <p className={styles.muted}>Servono almeno 2 squadre per generare il calendario.</p>
+        ) : null}
         {message ? <p className={styles.muted}>{message}</p> : null}
       </div>
 
@@ -176,17 +243,31 @@ export function AdminCalendarRoute() {
             <h2 className={styles.panelTitle}>{round.label}</h2>
             <div className={styles.mobileList}>
               {round.matches.map((match) => (
-                <Link
-                  className={cx(styles.matchCard, match.status === 'played' && styles.matchCardPlayed)}
-                  key={match.id}
-                  to={`${appPaths.adminMatches}/${match.id}/edit`}
-                >
-                  <strong>
-                    {getTeamName(match.home_team_id)} vs {getTeamName(match.away_team_id)}
-                  </strong>
-                  <span>{formatDateTime(match.scheduled_at)}</span>
-                  <span>{match.status}</span>
-                </Link>
+                (() => {
+                  const homeTeamName = getTeamName(match.home_team_id);
+                  const awayTeamName = getTeamName(match.away_team_id);
+
+                  return (
+                    <Link
+                      className={cx(
+                        styles.matchCard,
+                        match.status === 'played' && styles.matchCardPlayed
+                      )}
+                      key={match.id}
+                      to={`${appPaths.adminMatches}/${match.id}/edit`}
+                    >
+                      <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
+                        {getStatusLabel(match.status)}
+                      </span>
+                      <strong>
+                        {homeTeamName} vs {awayTeamName}
+                      </strong>
+                      <span>Data: {formatDateTime(match.scheduled_at)}</span>
+                      <span>Luogo: {match.venue ?? '-'}</span>
+                      <span>{getResultLabel(match, homeTeamName, awayTeamName)}</span>
+                    </Link>
+                  );
+                })()
               ))}
             </div>
 
@@ -194,26 +275,41 @@ export function AdminCalendarRoute() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Partita</th>
                     <th>Data</th>
+                    <th>Luogo</th>
+                    <th>Squadra A</th>
+                    <th>Squadra B</th>
                     <th>Stato</th>
+                    <th>Risultato</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {round.matches.map((match) => (
-                    <tr
-                      className={match.status === 'played' ? styles.tableRowPlayed : undefined}
-                      key={match.id}
-                    >
-                      <td>
-                        <Link to={`${appPaths.adminMatches}/${match.id}/edit`}>
-                          {getTeamName(match.home_team_id)} vs {getTeamName(match.away_team_id)}
-                        </Link>
-                      </td>
-                      <td>{formatDateTime(match.scheduled_at)}</td>
-                      <td>{match.status}</td>
-                    </tr>
-                  ))}
+                  {round.matches.map((match) => {
+                    const homeTeamName = getTeamName(match.home_team_id);
+                    const awayTeamName = getTeamName(match.away_team_id);
+
+                    return (
+                      <tr
+                        className={match.status === 'played' ? styles.tableRowPlayed : undefined}
+                        key={match.id}
+                      >
+                        <td>
+                          <Link to={`${appPaths.adminMatches}/${match.id}/edit`}>
+                            {formatDateTime(match.scheduled_at)}
+                          </Link>
+                        </td>
+                        <td>{match.venue ?? '-'}</td>
+                        <td>{homeTeamName}</td>
+                        <td>{awayTeamName}</td>
+                        <td>
+                          <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
+                            {getStatusLabel(match.status)}
+                          </span>
+                        </td>
+                        <td>{getResultLabel(match, homeTeamName, awayTeamName)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

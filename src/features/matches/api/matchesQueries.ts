@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createMatch,
-  deleteMatch,
   generateRoundRobinCalendar,
   listMatchesBySeason,
+  resetMatchResult,
   updateMatch,
   type SaveMatchInput,
   type UpdateMatchInput
@@ -49,11 +49,11 @@ export function useUpdateMatchMutation(seasonId: string | null) {
   });
 }
 
-export function useDeleteMatchMutation(seasonId: string | null) {
+export function useResetMatchResultMutation(seasonId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => deleteMatch(id),
+    mutationFn: (id: string) => resetMatchResult(id),
     onSuccess: async () => {
       if (seasonId) {
         await queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) });

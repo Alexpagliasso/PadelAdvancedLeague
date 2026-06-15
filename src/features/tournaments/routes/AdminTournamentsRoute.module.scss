@@ -132,6 +132,57 @@
   padding-top: 1.25rem;
 }
 
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.statCard {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #f8fbf9;
+  padding: 0.85rem;
+}
+
+.statCard span {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.statCard strong {
+  font-size: 1.35rem;
+}
+
+.progressBlock {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.progressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.progressTrack {
+  overflow: hidden;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: #edf2ef;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: #0b1f1a;
+  transition: width 180ms ease;
+}
+
 .detailHeader {
   display: flex;
   align-items: flex-start;
@@ -219,7 +270,8 @@
 
 @media (max-width: 900px) {
   .layout,
-  .grid {
+  .grid,
+  .dashboardGrid {
     grid-template-columns: 1fr;
   }
 

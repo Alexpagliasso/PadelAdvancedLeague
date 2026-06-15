@@ -1,5 +1,6 @@
 import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useMatchesBySeasonQuery } from '@/features/matches/api/matchesQueries';
 import { usePlayersQuery } from '@/features/players/api/playersQueries';
 import {
   useCreateTeamMutation,
@@ -81,6 +82,16 @@ function tournamentToForm(tournament: TournamentWithSeasons | null): TournamentF
   };
 }
 
+function formatDate(value: string | null): string {
+  if (!value) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('it-IT', {
+    dateStyle: 'medium'
+  }).format(new Date(value));
+}
+
 export function AdminTournamentsRoute() {
   const tournamentsQuery = useAdminTournamentsQuery();
   const playersQuery = usePlayersQuery();
@@ -105,8 +116,21 @@ export function AdminTournamentsRoute() {
     selectedTournament?.seasons[0]?.id ??
     null;
   const teamsQuery = useTeamsBySeasonQuery(selectedMainSeasonId);
+  const matchesQuery = useMatchesBySeasonQuery(selectedMainSeasonId);
   const createTeamMutation = useCreateTeamMutation(selectedMainSeasonId);
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
+  const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
+  const playedMatchesCount = matches.filter(
+    (match) => match.status === 'played' && match.result_status === 'official'
+  ).length;
+  const pendingMatchesCount = Math.max(0, matches.length - playedMatchesCount);
+  const completionPercentage =
+    matches.length > 0 ? Math.round((playedMatchesCount / matches.length) * 100) : 0;
+  const calendarGeneratedAt =
+    matches.length > 0
+      ? [...matches].sort((first, second) => first.created_at.localeCompare(second.created_at))[0]
+          ?.created_at ?? null
+      : null;
 
   const isBusy =
     createTournamentMutation.isPending ||
@@ -410,6 +434,48 @@ export function AdminTournamentsRoute() {
 
           {selectedTournament ? (
             <div className={styles.detailBlock}>
+              <div className={styles.dashboardGrid}>
+                <div className={styles.statCard}>
+                  <span>Squadre</span>
+                  <strong>{teams.length}</strong>
+                </div>
+                <div className={styles.statCard}>
+                  <span>Partite</span>
+                  <strong>{matches.length}</strong>
+                </div>
+                <div className={styles.statCard}>
+                  <span>Giocate</span>
+                  <strong>{playedMatchesCount}</strong>
+                </div>
+                <div className={styles.statCard}>
+                  <span>Da giocare</span>
+                  <strong>{pendingMatchesCount}</strong>
+                </div>
+              </div>
+
+              <div className={styles.progressBlock}>
+                <div className={styles.progressHeader}>
+                  <strong>
+                    {playedMatchesCount} / {matches.length} partite completate
+                  </strong>
+                  <span>{completionPercentage}%</span>
+                </div>
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${completionPercentage.toString()}%` }}
+                  />
+                </div>
+                {calendarGeneratedAt ? (
+                  <p className={styles.muted}>Calendario generato il {formatDate(calendarGeneratedAt)}</p>
+                ) : (
+                  <p className={styles.muted}>Calendario non ancora generato.</p>
+                )}
+                {matchesQuery.isError ? (
+                  <p className={styles.error}>{getErrorMessage(matchesQuery.error)}</p>
+                ) : null}
+              </div>
+
               <div className={styles.detailHeader}>
                 <div>
                   <h2 className={styles.panelTitle}>Squadre del torneo</h2>

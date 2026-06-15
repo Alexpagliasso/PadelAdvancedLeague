@@ -5,10 +5,14 @@ import type { TeamWithMembers } from '@/features/teams/api/teamsApi';
 
 export type PublicTournament = Database['public']['Tables']['tournaments']['Row'];
 export type PublicSeason = Database['public']['Tables']['seasons']['Row'];
+export type PublicPlayer = Database['public']['Tables']['players']['Row'];
+export type PublicTeam = TeamWithMembers & {
+  players: PublicPlayer[];
+};
 export type PublicTournamentData = {
   tournament: PublicTournament;
   season: PublicSeason;
-  teams: TeamWithMembers[];
+  teams: PublicTeam[];
   matches: MatchWithSets[];
 };
 
@@ -47,18 +51,49 @@ async function getMainSeason(tournamentId: string): Promise<PublicSeason | null>
   return data;
 }
 
-async function listPublicTeams(seasonId: string): Promise<TeamWithMembers[]> {
-  const { data, error } = await supabase
+async function listPublicTeams(seasonId: string): Promise<PublicTeam[]> {
+  const { data: teams, error: teamsError } = await supabase
     .from('teams')
     .select('*')
     .eq('season_id', seasonId)
     .order('name', { ascending: true });
 
-  if (error) {
-    throw error;
+  if (teamsError) {
+    throw teamsError;
   }
 
-  return data.map((team) => ({ ...team, members: [] }));
+  const { data: members, error: membersError } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('season_id', seasonId)
+    .order('position', { ascending: true });
+
+  if (membersError) {
+    throw membersError;
+  }
+
+  const playerIds = Array.from(new Set(members.map((member) => member.player_id)));
+  const { data: players, error: playersError } =
+    playerIds.length > 0
+      ? await supabase.from('players').select('*').in('id', playerIds)
+      : { data: [], error: null };
+
+  if (playersError) {
+    throw playersError;
+  }
+
+  return teams.map((team) => {
+    const teamMembers = members.filter((member) => member.team_id === team.id);
+    const teamPlayers = teamMembers
+      .map((member) => players.find((player) => player.id === member.player_id) ?? null)
+      .filter((player): player is PublicPlayer => player !== null);
+
+    return {
+      ...team,
+      members: teamMembers,
+      players: teamPlayers
+    };
+  });
 }
 
 async function listPublicMatches(seasonId: string): Promise<MatchWithSets[]> {

@@ -6,10 +6,10 @@
 
 .hero {
   display: grid;
-  gap: 2rem;
+  gap: 1.25rem;
   background: #0b1f1a;
   color: #ffffff;
-  padding: 1rem 1rem 2rem;
+  padding: 1rem 1rem 1.35rem;
 }
 
 .nav {
@@ -26,13 +26,13 @@
   border: 1px solid currentcolor;
   border-radius: 0.5rem;
   color: inherit;
-  padding: 0.6rem 0.8rem;
+  padding: 0.55rem 0.75rem;
   text-decoration: none;
 }
 
 .heroContent {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.55rem;
   margin: 0 auto;
   width: 100%;
   max-width: 72rem;
@@ -40,7 +40,7 @@
 
 .heroContent h1 {
   margin: 0;
-  font-size: clamp(2rem, 8vw, 4rem);
+  font-size: clamp(2rem, 9vw, 3.75rem);
   line-height: 1;
 }
 
@@ -48,7 +48,7 @@
   max-width: 42rem;
   margin: 0;
   color: rgb(255 255 255 / 78%);
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
 .eyebrow {
@@ -57,12 +57,41 @@
   text-transform: uppercase;
 }
 
-.section {
+.content {
   display: grid;
   gap: 1rem;
   margin: 0 auto;
   max-width: 72rem;
   padding: 1rem;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(max-content, 1fr));
+  overflow-x: auto;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.tabButton {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.8rem 0.75rem;
+  white-space: nowrap;
+}
+
+.tabButtonActive {
+  background: #0b1f1a;
+  color: #ffffff;
+}
+
+.section {
+  display: grid;
+  gap: 1rem;
 }
 
 .sectionHeader {
@@ -83,39 +112,176 @@
   font-size: 0.875rem;
 }
 
-.teamGrid {
+.standingsList {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
-.teamCard {
-  display: flex;
+.standingCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) repeat(2, auto);
+  gap: 0.45rem 0.7rem;
   align-items: center;
-  gap: 0.75rem;
   border: 1px solid #d9e4df;
   border-radius: 0.5rem;
   background: #ffffff;
-  padding: 0.85rem;
+  padding: 0.8rem;
 }
 
-.teamLogo,
-.logoFallback {
-  width: 2.5rem;
-  height: 2.5rem;
+.standingCard span,
+.standingCard b {
+  font-size: 0.875rem;
+}
+
+.standingCard strong {
+  min-width: 0;
+}
+
+.position {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  background: #eaf5ef;
+  color: #0b1f1a;
+  font-weight: 800;
+  place-items: center;
+}
+
+.accordion {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.accordionItem {
+  overflow: hidden;
+  border: 1px solid #d9e4df;
   border-radius: 0.5rem;
+  background: #ffffff;
 }
 
-.teamLogo {
+.accordionItemOpen {
+  border-color: #83b99b;
+}
+
+.accordionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0.8rem;
+  text-align: left;
+}
+
+.accordionItemOpen .accordionHeader {
+  background: #eaf5ef;
+}
+
+.teamIdentity {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.playerPair {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.playerIdentity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.playerIdentity img,
+.avatarFallback {
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid #b7cbc1;
+  border-radius: 50%;
+  background: #eaf5ef;
+  flex: 0 0 auto;
+}
+
+.playerIdentity img {
   object-fit: cover;
 }
 
-.logoFallback {
+.avatarFallback {
+  position: relative;
+  display: inline-block;
+}
+
+.avatarFallback::before {
+  position: absolute;
+  top: 0.38rem;
+  left: 50%;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background: #0b1f1a;
+  content: '';
+  transform: translateX(-50%);
+}
+
+.avatarFallback::after {
+  position: absolute;
+  right: 0.42rem;
+  bottom: 0.34rem;
+  left: 0.42rem;
+  height: 0.48rem;
+  border-radius: 999px 999px 0.25rem 0.25rem;
+  background: #0b1f1a;
+  content: '';
+}
+
+.playerIdentity strong {
+  min-width: 0;
+}
+
+.teamStats {
   display: grid;
-  background: #eaf5ef;
-  color: #0b1f1a;
-  font-weight: 700;
-  place-items: center;
-  text-transform: uppercase;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.teamStats b {
+  font-size: 0.9rem;
+}
+
+.teamStats small {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.accordionPanel {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  animation: accordion-in 140ms ease-out;
+}
+
+@keyframes accordion-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .matchList {
@@ -125,20 +291,83 @@
 
 .matchCard {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.55rem;
   border: 1px solid #d9e4df;
   border-radius: 0.5rem;
   background: #ffffff;
   padding: 0.85rem;
 }
 
+.matchCardPlayed {
+  border-color: #83b99b;
+  background: #f2faf5;
+}
+
 .matchCard span,
-.matchCard small,
-.matchDate {
+.matchCard small {
   color: var(--color-muted);
 }
 
+.matchTopline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.matchMeta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.matchMeta div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.matchMeta dt {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.matchMeta dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.badge {
+  border-radius: 999px;
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  text-transform: capitalize;
+}
+
+.badge_scheduled {
+  background: #eef3f0;
+  color: #47524d;
+}
+
+.badge_played {
+  background: #d8efe2;
+  color: #0b5a32;
+}
+
+.badge_postponed {
+  background: #fff1c7;
+  color: #715200;
+}
+
+.badge_cancelled {
+  background: #f8d7da;
+  color: #842029;
+}
+
 .tableWrap {
+  display: none;
   overflow-x: auto;
   border: 1px solid #d9e4df;
   border-radius: 0.5rem;
@@ -182,16 +411,51 @@
   padding: 1rem;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 760px) {
   .hero {
-    padding: 1.25rem 1.5rem 3rem;
+    padding: 1.25rem 1.5rem 2.5rem;
   }
 
-  .section {
+  .content {
     padding: 1.5rem;
   }
 
-  .teamGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .standingsList {
+    display: none;
+  }
+
+  .tableWrap {
+    display: block;
+  }
+
+  .playerIdentity img,
+  .avatarFallback {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .avatarFallback::before {
+    top: 0.48rem;
+    width: 0.6rem;
+    height: 0.6rem;
+  }
+
+  .avatarFallback::after {
+    right: 0.5rem;
+    bottom: 0.42rem;
+    left: 0.5rem;
+    height: 0.58rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .accordionHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .teamStats {
+    grid-template-columns: repeat(3, max-content);
+    text-align: left;
   }
 }

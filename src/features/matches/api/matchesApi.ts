@@ -168,12 +168,7 @@ export async function createMatch(input: SaveMatchInput): Promise<Match> {
     throw error;
   }
 
-  try {
-    await replaceMatchSets(data.id, input.sets);
-  } catch (setsError) {
-    await deleteMatch(data.id);
-    throw setsError;
-  }
+  await replaceMatchSets(data.id, input.sets);
 
   return data;
 }
@@ -208,12 +203,30 @@ export async function updateMatch(input: UpdateMatchInput): Promise<Match> {
   return data;
 }
 
-export async function deleteMatch(id: string): Promise<void> {
-  const { error } = await supabase.from('matches').delete().eq('id', id);
+export async function resetMatchResult(id: string): Promise<Match> {
+  const { error: setsError } = await supabase.from('match_sets').delete().eq('match_id', id);
+
+  if (setsError) {
+    throw setsError;
+  }
+
+  const { data, error } = await supabase
+    .from('matches')
+    .update({
+      status: 'scheduled',
+      result_status: 'pending',
+      home_sets_won: 0,
+      away_sets_won: 0
+    })
+    .eq('id', id)
+    .select('*')
+    .single();
 
   if (error) {
     throw error;
   }
+
+  return data;
 }
 
 export async function generateRoundRobinCalendar(
@@ -228,11 +241,15 @@ export async function generateRoundRobinCalendar(
 
   const { data: existingMatches, error: existingMatchesError } = await supabase
     .from('matches')
-    .select('home_team_id, away_team_id')
+    .select('id, home_team_id, away_team_id')
     .eq('season_id', seasonId);
 
   if (existingMatchesError) {
     throw existingMatchesError;
+  }
+
+  if (existingMatches.length > 0) {
+    throw new Error('Il calendario è già stato generato e non può essere modificato.');
   }
 
   const existingPairs = new Set(
