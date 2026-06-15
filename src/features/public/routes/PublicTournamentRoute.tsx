@@ -6,9 +6,18 @@ import type { MatchWithSets } from '@/features/matches/api/matchesApi';
 import type {
   PublicPlayer,
   PublicTeam,
+  PublicTournament,
   PublicTournamentData
 } from '@/features/public/api/publicTournamentApi';
-import { usePublicTournamentQuery } from '@/features/public/api/publicTournamentQueries';
+import {
+  usePublicTournamentQuery,
+  usePublicTournamentsQuery
+} from '@/features/public/api/publicTournamentQueries';
+import {
+  formatMatchDate,
+  formatMatchTime
+} from '@/features/matches/lib/matchDateTime';
+import { getUniqueMatchesByFixture, isMatchPlayed } from '@/features/matches/lib/matchStatus';
 import { calculateStandings } from '@/features/standings/lib/standingsEngine';
 
 import styles from '@/features/public/routes/PublicTournamentRoute.module.scss';
@@ -27,32 +36,11 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Errore imprevisto.';
 }
 
 function cx(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
-}
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return 'Da programmare';
-  }
-
-  return new Intl.DateTimeFormat('it-IT', {
-    dateStyle: 'medium'
-  }).format(new Date(value));
-}
-
-function formatTime(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('it-IT', {
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(value));
 }
 
 function getTeamName(teams: PublicTeam[], teamId: string): string {
@@ -65,7 +53,7 @@ function getOpponentName(match: MatchWithSets, selectedTeamId: string, teams: Pu
 }
 
 function getMatchResult(match: MatchWithSets, teams: PublicTeam[]): string {
-  if (match.status !== 'played' || match.result_status !== 'official') {
+  if (!isMatchPlayed(match)) {
     return 'Da disputare';
   }
 
@@ -92,11 +80,34 @@ function getTeamDisplayLabel(team: PublicTeam): string {
 }
 
 function getCompactResult(match: MatchWithSets): string {
-  if (match.status !== 'played' || match.result_status !== 'official') {
+  if (!isMatchPlayed(match)) {
     return 'Da disputare';
   }
 
   return `${match.home_sets_won.toString()}-${match.away_sets_won.toString()}`;
+}
+
+function getTeamOutcome(match: MatchWithSets, teamId: string): 'win' | 'loss' | null {
+  if (!isMatchPlayed(match)) {
+    return null;
+  }
+
+  const homeWon = match.home_sets_won > match.away_sets_won;
+  const selectedTeamIsHome = match.home_team_id === teamId;
+  const selectedTeamWon = selectedTeamIsHome ? homeWon : !homeWon;
+
+  return selectedTeamWon ? 'win' : 'loss';
+}
+
+function getStatusLabel(status: MatchWithSets['status']): string {
+  const labels: Record<MatchWithSets['status'], string> = {
+    scheduled: 'Da disputare',
+    played: 'Giocata',
+    postponed: 'Rinviata',
+    cancelled: 'Annullata'
+  };
+
+  return labels[status];
 }
 
 function getSetsLabel(match: MatchWithSets): string {
@@ -123,7 +134,7 @@ function sortCalendarMatches(matches: MatchWithSets[]): MatchWithSets[] {
 
 function sortResultMatches(matches: MatchWithSets[]): MatchWithSets[] {
   return [...matches]
-    .filter((match) => match.status === 'played' && match.result_status === 'official')
+    .filter(isMatchPlayed)
     .sort((first, second) => {
       const firstDate = first.scheduled_at ?? first.updated_at;
       const secondDate = second.scheduled_at ?? second.updated_at;
@@ -133,12 +144,77 @@ function sortResultMatches(matches: MatchWithSets[]): MatchWithSets[] {
 
 export function PublicTournamentRoute() {
   const params = useParams<{ slug?: string }>();
-  const tournamentQuery = usePublicTournamentQuery(params.slug ?? null);
+  const routeSlug = params.slug ?? null;
+  const isSlugRoute = routeSlug !== null;
+  const tournamentsQuery = usePublicTournamentsQuery();
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const publicTournaments = tournamentsQuery.data ?? [];
+  const selectedTournamentSlug = isSlugRoute ? routeSlug : selectedSlug;
+  const tournamentQuery = usePublicTournamentQuery(
+    selectedTournamentSlug,
+    isSlugRoute || selectedSlug !== null
+  );
   const data = tournamentQuery.data ?? null;
 
   useEffect(() => {
     document.title = 'PAD - Padel And Drink';
   }, []);
+
+  useEffect(() => {
+    if (isSlugRoute || !tournamentsQuery.data) {
+      return;
+    }
+
+    if (tournamentsQuery.data.length === 1) {
+      setSelectedSlug(tournamentsQuery.data[0]?.slug ?? null);
+      return;
+    }
+
+    setSelectedSlug((current) =>
+      current && tournamentsQuery.data.some((tournament) => tournament.slug === current)
+        ? current
+        : null
+    );
+  }, [isSlugRoute, tournamentsQuery.data]);
+
+  if (!isSlugRoute && tournamentsQuery.isLoading) {
+    return (
+      <main className={styles.page}>
+        <p className={styles.muted}>Caricamento tornei...</p>
+      </main>
+    );
+  }
+
+  if (!isSlugRoute && tournamentsQuery.isError) {
+    return (
+      <main className={styles.page}>
+        <p className={styles.error}>{getErrorMessage(tournamentsQuery.error)}</p>
+      </main>
+    );
+  }
+
+  if (!isSlugRoute && publicTournaments.length === 0) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.emptyState}>
+          <h1>Nessun torneo attivo</h1>
+          <p>Non ci sono tornei pubblici attivi da mostrare.</p>
+          <Link className={styles.adminLink} to={appPaths.auth}>
+            Accesso admin
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  if (!isSlugRoute && !selectedSlug) {
+    return (
+      <PublicTournamentSelectionPage
+        onSelectTournament={setSelectedSlug}
+        tournaments={publicTournaments}
+      />
+    );
+  }
 
   if (tournamentQuery.isLoading) {
     return (
@@ -160,25 +236,96 @@ export function PublicTournamentRoute() {
     return (
       <main className={styles.page}>
         <section className={styles.emptyState}>
-          <h1>Nessun torneo attivo</h1>
-          <p>Non ci sono tornei pubblici attivi da mostrare.</p>
-          <Link className={styles.adminLink} to={appPaths.auth}>
-            Login admin
-          </Link>
+          <h1>Torneo non disponibile</h1>
+          <p>Il torneo richiesto non e pubblico o non e attivo.</p>
         </section>
       </main>
     );
   }
 
-  return <PublicTournamentView data={data} />;
+  return (
+    <PublicTournamentView
+      data={data}
+      selector={
+        !isSlugRoute && publicTournaments.length > 1 ? (
+          <TournamentSelect
+            onChange={setSelectedSlug}
+            selectedSlug={selectedSlug}
+            tournaments={publicTournaments}
+          />
+        ) : null
+      }
+    />
+  );
+}
+
+function PublicTournamentSelectionPage({
+  onSelectTournament,
+  tournaments
+}: {
+  onSelectTournament: (slug: string | null) => void;
+  tournaments: PublicTournament[];
+}) {
+  return (
+    <main className={styles.page}>
+      <header className={styles.hero}>
+        <nav className={styles.nav}>
+          <Link className={styles.adminLink} to={appPaths.auth}>
+            Accesso admin
+          </Link>
+        </nav>
+        <div className={styles.heroContent}>
+          <img className={styles.heroLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
+          <p className={styles.eyebrow}>Tornei attivi</p>
+          <TournamentSelect
+            onChange={onSelectTournament}
+            selectedSlug={null}
+            tournaments={tournaments}
+          />
+          <p className={styles.heroHint}>Scegli un torneo per vedere classifica, squadre e calendario.</p>
+        </div>
+      </header>
+    </main>
+  );
+}
+
+function TournamentSelect({
+  onChange,
+  selectedSlug,
+  tournaments
+}: {
+  onChange: (slug: string | null) => void;
+  selectedSlug: string | null;
+  tournaments: PublicTournament[];
+}) {
+  return (
+    <label className={styles.tournamentSelect}>
+      <span>Seleziona torneo</span>
+      <select
+        onChange={(event) => {
+          onChange(event.target.value || null);
+        }}
+        value={selectedSlug ?? ''}
+      >
+        <option value="">Seleziona torneo</option>
+        {tournaments.map((tournament) => (
+          <option key={tournament.id} value={tournament.slug}>
+            {tournament.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 export function PublicTournamentView({
   data,
-  header
+  header,
+  selector
 }: {
   data: PublicTournamentData;
   header?: ReactNode;
+  selector?: ReactNode;
 }) {
   const [activeTab, setActiveTab] = useState<PublicTab>('standings');
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
@@ -195,35 +342,19 @@ export function PublicTournamentView({
     () => sortResultMatches(data.matches),
     [data.matches]
   );
-  const matchesByTeam = useMemo(() => {
-    const groups = new Map<string, MatchWithSets[]>();
-
-    data.teams.forEach((team) => {
-      groups.set(
-        team.id,
-        sortCalendarMatches(
-          data.matches.filter(
-            (match) => match.home_team_id === team.id || match.away_team_id === team.id
-          )
-        )
-      );
-    });
-
-    return groups;
-  }, [data]);
-
   return (
     <main className={styles.page}>
       {header ?? (
         <header className={styles.hero}>
           <nav className={styles.nav}>
             <Link className={styles.adminLink} to={appPaths.auth}>
-              Login admin
+            Accesso admin
             </Link>
           </nav>
           <div className={styles.heroContent}>
             <img className={styles.heroLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
             <p className={styles.eyebrow}>Torneo attivo</p>
+            {selector}
             <h1>{data.tournament.name}</h1>
             {data.tournament.description ? <p>{data.tournament.description}</p> : null}
           </div>
@@ -250,7 +381,7 @@ export function PublicTournamentView({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Classifica</h2>
-              <span>Live</span>
+              <span>Aggiornata</span>
             </div>
             <div className={styles.standingsList}>
               {standings.map((row) => (
@@ -260,9 +391,13 @@ export function PublicTournamentView({
                   <span>PG {row.played}</span>
                   <span>V {row.wins}</span>
                   <span>P {row.losses}</span>
-                  <span>DSG {row.setDiff}</span>
-                  <span>DGG {row.gameDiff}</span>
-                  <b>{row.points} pt</b>
+                  <span>SV {row.setsWon}</span>
+                  <span>SP {row.setsLost}</span>
+                  <span>DS {row.setDiff}</span>
+                  <span>GV {row.gamesWon}</span>
+                  <span>GP {row.gamesLost}</span>
+                  <span>DG {row.gameDiff}</span>
+                  <b>{row.points} Pt</b>
                 </article>
               ))}
             </div>
@@ -275,8 +410,12 @@ export function PublicTournamentView({
                     <th>PG</th>
                     <th>V</th>
                     <th>P</th>
-                    <th>DSG</th>
-                    <th>DGG</th>
+                    <th>SV</th>
+                    <th>SP</th>
+                    <th>DS</th>
+                    <th>GV</th>
+                    <th>GP</th>
+                    <th>DG</th>
                     <th>Pt</th>
                   </tr>
                 </thead>
@@ -288,7 +427,11 @@ export function PublicTournamentView({
                       <td>{row.played}</td>
                       <td>{row.wins}</td>
                       <td>{row.losses}</td>
+                      <td>{row.setsWon}</td>
+                      <td>{row.setsLost}</td>
                       <td>{row.setDiff}</td>
+                      <td>{row.gamesWon}</td>
+                      <td>{row.gamesLost}</td>
                       <td>{row.gameDiff}</td>
                       <td>
                         <strong>{row.points}</strong>
@@ -312,11 +455,12 @@ export function PublicTournamentView({
                 <TeamAccordionItem
                   isOpen={openTeamId === team.id}
                   key={team.id}
-                  matches={matchesByTeam.get(team.id) ?? []}
+                  matches={data.matches}
                   onOpen={() => {
                     setOpenTeamId((current) => (current === team.id ? null : team.id));
                   }}
                   points={standings.find((row) => row.teamId === team.id)?.points ?? 0}
+                  seasonId={data.season.id}
                   team={team}
                   teams={data.teams}
                 />
@@ -354,6 +498,7 @@ function TeamAccordionItem({
   matches,
   onOpen,
   points,
+  seasonId,
   team,
   teams
 }: {
@@ -361,13 +506,21 @@ function TeamAccordionItem({
   matches: MatchWithSets[];
   onOpen: () => void;
   points: number;
+  seasonId: string;
   team: PublicTeam;
   teams: PublicTeam[];
 }) {
-  const playedCount = matches.filter(
-    (match) => match.status === 'played' && match.result_status === 'official'
-  ).length;
-  const pendingCount = Math.max(0, matches.length - playedCount);
+  const teamMatches = getUniqueMatchesByFixture(
+    matches.filter(
+      (match) =>
+        match.season_id === seasonId &&
+        (match.home_team_id === team.id || match.away_team_id === team.id)
+    )
+  );
+  const totalePartite = teamMatches.length;
+  const partiteGiocate = teamMatches.filter(isMatchPlayed).length;
+  const partiteDaGiocare = Math.max(totalePartite - partiteGiocate, 0);
+  const sortedTeamMatches = sortCalendarMatches(teamMatches);
 
   return (
     <article className={cx(styles.accordionItem, isOpen && styles.accordionItemOpen)}>
@@ -400,46 +553,62 @@ function TeamAccordionItem({
         </span>
         <span className={styles.teamStats}>
           <b>{points} pt</b>
-          <small>{playedCount.toString()} giocate</small>
-          <small>{pendingCount.toString()} da giocare</small>
+          <small>{partiteGiocate.toString()} giocate</small>
+          <small>{partiteDaGiocare.toString()} da giocare</small>
         </span>
       </button>
 
       {isOpen ? (
         <div className={styles.accordionPanel}>
-          {matches.length === 0 ? <p className={styles.muted}>Nessuna partita per questa squadra.</p> : null}
+          {sortedTeamMatches.length === 0 ? <p className={styles.muted}>Nessuna partita per questa squadra.</p> : null}
           <div className={styles.matchList}>
-            {matches.map((match) => (
-              <article
-                className={cx(styles.matchCard, styles[`matchCard_${match.status}`])}
-                key={match.id}
-              >
-                <div className={styles.matchTopline}>
-                  <strong>vs {getOpponentName(match, team.id, teams)}</strong>
-                  <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
-                    {match.status}
-                  </span>
-                </div>
-                <dl className={styles.matchMeta}>
-                  <div>
-                    <dt>Data</dt>
-                    <dd>{formatDate(match.scheduled_at)}</dd>
+            {sortedTeamMatches.map((match) => {
+              const outcome = getTeamOutcome(match, team.id);
+
+              return (
+                <article
+                  className={cx(styles.matchCard, styles[`matchCard_${match.status}`])}
+                  key={match.id}
+                >
+                  <div className={styles.matchTopline}>
+                    <strong>vs {getOpponentName(match, team.id, teams)}</strong>
+                    <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
+                      {getStatusLabel(match.status)}
+                    </span>
                   </div>
-                  <div>
-                    <dt>Ora</dt>
-                    <dd>{formatTime(match.scheduled_at)}</dd>
-                  </div>
-                  <div>
-                    <dt>Luogo</dt>
-                    <dd>{match.venue ?? 'Da definire'}</dd>
-                  </div>
-                  <div>
-                    <dt>Risultato</dt>
-                    <dd>{getCompactResult(match)}</dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
+                  <dl className={styles.matchMeta}>
+                    <div>
+                      <dt>Data</dt>
+                      <dd>{formatMatchDate(match.scheduled_at)}</dd>
+                    </div>
+                    <div>
+                      <dt>Ora</dt>
+                      <dd>{formatMatchTime(match.scheduled_at)}</dd>
+                    </div>
+                    <div>
+                      <dt>Luogo</dt>
+                      <dd>{match.venue ?? 'Da definire'}</dd>
+                    </div>
+                    <div>
+                      <dt>Risultato</dt>
+                      <dd className={styles.resultWithOutcome}>
+                        {getCompactResult(match)}
+                        {outcome ? (
+                          <span
+                            className={cx(
+                              styles.outcomeBadge,
+                              outcome === 'win' ? styles.outcomeWin : styles.outcomeLoss
+                            )}
+                          >
+                            {outcome === 'win' ? 'V' : 'P'}
+                          </span>
+                        ) : null}
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -471,10 +640,12 @@ function MatchList({
             <strong>
               {getTeamName(teams, match.home_team_id)} vs {getTeamName(teams, match.away_team_id)}
             </strong>
-            <span className={cx(styles.badge, styles[`badge_${match.status}`])}>{match.status}</span>
+            <span className={cx(styles.badge, styles[`badge_${match.status}`])}>
+              {getStatusLabel(match.status)}
+            </span>
           </div>
           <span>
-            {formatDate(match.scheduled_at)} · {formatTime(match.scheduled_at)}
+            {formatMatchDate(match.scheduled_at)} · {formatMatchTime(match.scheduled_at)}
           </span>
           <span>{match.venue ?? 'Luogo da definire'}</span>
           <strong>{getMatchResult(match, teams)}</strong>

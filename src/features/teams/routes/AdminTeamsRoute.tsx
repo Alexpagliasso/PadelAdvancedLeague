@@ -42,7 +42,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Errore imprevisto.';
 }
 
 function cx(...classes: (string | undefined | false)[]): string {
@@ -136,7 +136,7 @@ export function AdminTeamsRoute() {
 
   const getPlayerName = (playerId: string): string => {
     const player = players.find((item) => item.id === playerId);
-    return player?.display_name ?? 'Unknown player';
+    return player?.display_name ?? 'Giocatore sconosciuto';
   };
 
   const handleNewTeam = () => {
@@ -224,7 +224,7 @@ export function AdminTeamsRoute() {
     <section className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Admin</p>
+          <p className={styles.eyebrow}>Area admin</p>
           <h1 className={styles.title}>Squadre</h1>
         </div>
         <button className={styles.button} disabled={!selectedSeasonId} onClick={handleNewTeam} type="button">

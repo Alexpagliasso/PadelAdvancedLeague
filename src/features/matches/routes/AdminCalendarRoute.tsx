@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
 import type { MatchWithSets } from '@/features/matches/api/matchesApi';
@@ -7,6 +7,10 @@ import {
   useGenerateCalendarMutation,
   useMatchesBySeasonQuery
 } from '@/features/matches/api/matchesQueries';
+import {
+  formatMatchDate,
+  formatMatchDateTime
+} from '@/features/matches/lib/matchDateTime';
 import { useTeamsBySeasonQuery } from '@/features/teams/api/teamsQueries';
 import { useAdminTournamentsQuery } from '@/features/tournaments/api/tournamentsQueries';
 
@@ -22,32 +26,11 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Errore imprevisto.';
 }
 
 function cx(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
-}
-
-function formatDateTime(value: string | null): string {
-  if (!value) {
-    return 'Da programmare';
-  }
-
-  return new Intl.DateTimeFormat('it-IT', {
-    dateStyle: 'short',
-    timeStyle: 'short'
-  }).format(new Date(value));
-}
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('it-IT', {
-    dateStyle: 'medium'
-  }).format(new Date(value));
 }
 
 function getResultLabel(match: MatchWithSets, homeTeamName: string, awayTeamName: string): string {
@@ -60,10 +43,10 @@ function getResultLabel(match: MatchWithSets, homeTeamName: string, awayTeamName
 
 function getStatusLabel(status: MatchWithSets['status']): string {
   const labels: Record<MatchWithSets['status'], string> = {
-    scheduled: 'Scheduled',
-    played: 'Played',
-    postponed: 'Postponed',
-    cancelled: 'Cancelled'
+    scheduled: 'Da disputare',
+    played: 'Giocata',
+    postponed: 'Rinviata',
+    cancelled: 'Annullata'
   };
 
   return labels[status];
@@ -99,6 +82,7 @@ function getRounds(matches: MatchWithSets[], teamsCount: number): CalendarRound[
 }
 
 export function AdminCalendarRoute() {
+  const navigate = useNavigate();
   const tournamentsQuery = useAdminTournamentsQuery();
 
   const tournamentOptions = useMemo(
@@ -174,7 +158,7 @@ export function AdminCalendarRoute() {
       setMessage(
         createdCount > 0
           ? `Calendario generato: ${createdCount.toString()} partite create.`
-          : 'Calendario gia completo: nessuna partita creata.'
+          : 'Calendario già completo: nessuna partita creata.'
       );
     } catch (error) {
       setMessage(getErrorMessage(error));
@@ -185,7 +169,7 @@ export function AdminCalendarRoute() {
     <section className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Admin</p>
+          <p className={styles.eyebrow}>Area admin</p>
           <h1 className={styles.title}>Calendario</h1>
         </div>
         <button
@@ -223,7 +207,7 @@ export function AdminCalendarRoute() {
           </select>
         </label>
         {calendarGeneratedAt ? (
-          <p className={styles.successMessage}>Calendario generato il {formatDate(calendarGeneratedAt)}</p>
+          <p className={styles.successMessage}>Calendario generato il {formatMatchDate(calendarGeneratedAt)}</p>
         ) : null}
         {isCalendarGenerated ? (
           <p className={styles.muted}>Il calendario è già stato generato e non può essere modificato.</p>
@@ -262,7 +246,7 @@ export function AdminCalendarRoute() {
                       <strong>
                         {homeTeamName} vs {awayTeamName}
                       </strong>
-                      <span>Data: {formatDateTime(match.scheduled_at)}</span>
+                      <span>Data: {formatMatchDateTime(match.scheduled_at)}</span>
                       <span>Luogo: {match.venue ?? '-'}</span>
                       <span>{getResultLabel(match, homeTeamName, awayTeamName)}</span>
                     </Link>
@@ -288,14 +272,32 @@ export function AdminCalendarRoute() {
                     const homeTeamName = getTeamName(match.home_team_id);
                     const awayTeamName = getTeamName(match.away_team_id);
 
+                    const matchPath = `${appPaths.adminMatches}/${match.id}/edit`;
+
                     return (
                       <tr
                         className={match.status === 'played' ? styles.tableRowPlayed : undefined}
                         key={match.id}
+                        onClick={() => {
+                          void navigate(matchPath);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            void navigate(matchPath);
+                          }
+                        }}
+                        role="link"
+                        tabIndex={0}
                       >
                         <td>
-                          <Link to={`${appPaths.adminMatches}/${match.id}/edit`}>
-                            {formatDateTime(match.scheduled_at)}
+                          <Link
+                            onClick={(event) => {
+                              event.stopPropagation();
+                            }}
+                            to={matchPath}
+                          >
+                            {formatMatchDateTime(match.scheduled_at)}
                           </Link>
                         </td>
                         <td>{match.venue ?? '-'}</td>

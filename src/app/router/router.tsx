@@ -44,7 +44,7 @@ function BootstrapRoute() {
         }}
         type="button"
       >
-        Logout
+        Esci
       </button>
     </section>
   );
@@ -53,7 +53,7 @@ function BootstrapRoute() {
 function NotFoundRoute() {
   return (
     <section className={styles.routeFrame}>
-      <p className={styles.routeMessage}>Route not found.</p>
+      <p className={styles.routeMessage}>Pagina non trovata.</p>
     </section>
   );
 }

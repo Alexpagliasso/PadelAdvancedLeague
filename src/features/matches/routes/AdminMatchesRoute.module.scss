@@ -233,14 +233,10 @@
 .button:hover:not(:disabled) {
   background: var(--color-accent-hover);
   color: var(--pad-navy-dark);
-  text-decoration: underline;
-  text-underline-offset: 0.2rem;
 }
 
 .buttonSecondary:hover:not(:disabled) {
   border-color: var(--color-primary-hover);
   background: var(--color-primary-hover);
   color: var(--color-surface);
-  text-decoration: underline;
-  text-underline-offset: 0.2rem;
 }

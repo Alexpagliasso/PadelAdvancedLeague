@@ -142,6 +142,16 @@ export async function listMatchesBySeason(seasonId: string): Promise<MatchWithSe
   }));
 }
 
+export async function getMatchById(id: string): Promise<Match | null> {
+  const { data, error } = await supabase.from('matches').select('*').eq('id', id).maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function createMatch(input: SaveMatchInput): Promise<Match> {
   validateTeams(input.home_team_id, input.away_team_id);
   const resultSummary = getResultSummary(input.sets);

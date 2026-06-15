@@ -8,7 +8,7 @@ export function AdminPlaceholderRoute({ title }: AdminPlaceholderRouteProps) {
   return (
     <section className={styles.page}>
       <header className={styles.header}>
-        <p className={styles.eyebrow}>Admin</p>
+        <p className={styles.eyebrow}>Area admin</p>
         <h1 className={styles.title}>{title}</h1>
       </header>
 

@@ -75,11 +75,38 @@
   line-height: 1.55;
 }
 
+.heroHint {
+  color: var(--pad-blue-soft);
+}
+
 .eyebrow {
   color: var(--pad-blue-soft);
   font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.tournamentSelect {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 28rem;
+  color: var(--pad-blue-soft);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.tournamentSelect select {
+  width: 100%;
+  border: 1px solid var(--pad-blue-border);
+  border-radius: 0.5rem;
+  background: var(--pad-surface);
+  color: var(--pad-navy);
+  font-weight: 800;
+  padding: 0.85rem 0.95rem;
+  text-transform: none;
 }
 
 .content {
@@ -218,9 +245,7 @@
 
 .accordionHeader:hover {
   background: var(--pad-blue-soft-strong);
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.18rem;
+  border-color: var(--pad-blue-border);
 }
 
 .accordionItemOpen .accordionHeader {
@@ -402,6 +427,35 @@
   font-weight: 700;
 }
 
+.resultWithOutcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.outcomeBadge {
+  display: inline-grid;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1;
+  place-items: center;
+}
+
+.outcomeWin {
+  border: 1px solid #86efac;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.outcomeLoss {
+  border: 1px solid #fca5a5;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .badge {
   border-radius: 999px;
   flex: 0 0 auto;
@@ -484,6 +538,10 @@
   .heroLogo {
     width: clamp(7.5rem, 12vw, 10rem);
     margin-bottom: 0.7rem;
+  }
+
+  .tournamentSelect {
+    width: min(100%, 24rem);
   }
 
   .content {

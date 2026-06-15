@@ -12,7 +12,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Errore imprevisto.';
 }
 
 export function AdminStandingsRoute() {
@@ -66,7 +66,7 @@ export function AdminStandingsRoute() {
     <section className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Admin</p>
+          <p className={styles.eyebrow}>Area admin</p>
           <h1 className={styles.title}>Classifica</h1>
         </div>
       </header>
@@ -120,7 +120,7 @@ export function AdminStandingsRoute() {
                 <strong>
                   {row.position.toString()}. {row.teamName}
                 </strong>
-                <span>{row.points.toString()} pt</span>
+                <span>{row.points.toString()} Pt</span>
               </div>
               <dl className={styles.statsGrid}>
                 <div>
@@ -136,11 +136,27 @@ export function AdminStandingsRoute() {
                   <dd>{row.losses}</dd>
                 </div>
                 <div>
-                  <dt>DSG</dt>
+                  <dt>SV</dt>
+                  <dd>{row.setsWon}</dd>
+                </div>
+                <div>
+                  <dt>SP</dt>
+                  <dd>{row.setsLost}</dd>
+                </div>
+                <div>
+                  <dt>DS</dt>
                   <dd>{row.setDiff}</dd>
                 </div>
                 <div>
-                  <dt>DGG</dt>
+                  <dt>GV</dt>
+                  <dd>{row.gamesWon}</dd>
+                </div>
+                <div>
+                  <dt>GP</dt>
+                  <dd>{row.gamesLost}</dd>
+                </div>
+                <div>
+                  <dt>DG</dt>
                   <dd>{row.gameDiff}</dd>
                 </div>
               </dl>
@@ -159,11 +175,11 @@ export function AdminStandingsRoute() {
                 <th>P</th>
                 <th>SV</th>
                 <th>SP</th>
-                <th>DSG</th>
+                <th>DS</th>
                 <th>GV</th>
                 <th>GP</th>
-                <th>DGG</th>
-                <th>Punti</th>
+                <th>DG</th>
+                <th>Pt</th>
               </tr>
             </thead>
             <tbody>

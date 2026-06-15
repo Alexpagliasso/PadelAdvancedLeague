@@ -122,18 +122,6 @@ export async function createTournament(input: CreateTournamentInput): Promise<To
 export async function updateTournament(input: UpdateTournamentInput): Promise<Tournament> {
   const { id, ...values } = input;
 
-  if (values.status === 'active') {
-    const { error: deactivateError } = await supabase
-      .from('tournaments')
-      .update({ status: 'draft' })
-      .eq('status', 'active')
-      .neq('id', id);
-
-    if (deactivateError) {
-      throw deactivateError;
-    }
-  }
-
   const { data, error } = await supabase
     .from('tournaments')
     .update(values)
@@ -152,18 +140,6 @@ export async function updateTournamentStatus(
   id: string,
   status: TournamentStatus
 ): Promise<Tournament> {
-  if (status === 'active') {
-    const { error: deactivateError } = await supabase
-      .from('tournaments')
-      .update({ status: 'draft' })
-      .eq('status', 'active')
-      .neq('id', id);
-
-    if (deactivateError) {
-      throw deactivateError;
-    }
-  }
-
   const { data, error } = await supabase
     .from('tournaments')
     .update({ status })

@@ -5,10 +5,17 @@ import type { MatchStatus } from '@/lib/supabase/types';
 import type { MatchWithSets, MatchSetInput } from '@/features/matches/api/matchesApi';
 import {
   useCreateMatchMutation,
+  useMatchQuery,
   useMatchesBySeasonQuery,
   useResetMatchResultMutation,
   useUpdateMatchMutation
 } from '@/features/matches/api/matchesQueries';
+import {
+  buildMatchDateTime,
+  formatMatchDateTime,
+  getMatchDateInputValue,
+  getMatchTimeInputValue
+} from '@/features/matches/lib/matchDateTime';
 import { useTeamsBySeasonQuery } from '@/features/teams/api/teamsQueries';
 import { useAdminTournamentsQuery } from '@/features/tournaments/api/tournamentsQueries';
 
@@ -72,35 +79,11 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Errore imprevisto.';
 }
 
 function cx(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
-}
-
-function getDatePart(value: string | null): string {
-  if (!value) {
-    return '';
-  }
-
-  return value.slice(0, 10);
-}
-
-function getTimePart(value: string | null): string {
-  if (!value) {
-    return '';
-  }
-
-  return value.slice(11, 16);
-}
-
-function getScheduledAt(date: string, time: string): string | null {
-  if (!date) {
-    return null;
-  }
-
-  return `${date}T${time || '00:00'}:00`;
 }
 
 function getVenueFromForm(form: MatchFormState): string | null {
@@ -119,23 +102,23 @@ function isValidHalfHourTime(time: string): boolean {
   return minutes === '00' || minutes === '30';
 }
 
-function formatDateTime(value: string | null): string {
-  if (!value) {
-    return 'Da programmare';
-  }
-
-  return new Intl.DateTimeFormat('it-IT', {
-    dateStyle: 'short',
-    timeStyle: 'short'
-  }).format(new Date(value));
-}
-
 function getScoreLabel(match: MatchWithSets): string {
   if (match.result_status !== 'official') {
     return '-';
   }
 
   return `${match.home_sets_won.toString()}-${match.away_sets_won.toString()}`;
+}
+
+function getStatusLabel(status: MatchStatus): string {
+  const labels: Record<MatchStatus, string> = {
+    scheduled: 'Da disputare',
+    played: 'Giocata',
+    postponed: 'Rinviata',
+    cancelled: 'Annullata'
+  };
+
+  return labels[status];
 }
 
 function getSetsLabel(match: MatchWithSets): string {
@@ -227,8 +210,8 @@ function matchToForm(match: MatchWithSets | null): MatchFormState {
   return {
     homeTeamId: match.home_team_id,
     awayTeamId: match.away_team_id,
-    date: getDatePart(match.scheduled_at),
-    time: getTimePart(match.scheduled_at),
+    date: getMatchDateInputValue(match.scheduled_at),
+    time: getMatchTimeInputValue(match.scheduled_at),
     venueOption: isKnownVenue || !venue ? venue || 'GPadel Borgaro' : 'Altro',
     customVenue: isKnownVenue ? '' : venue,
     status: match.status,
@@ -275,6 +258,7 @@ export function AdminMatchesRoute() {
   const createMatchMutation = useCreateMatchMutation(selectedSeasonId);
   const updateMatchMutation = useUpdateMatchMutation(selectedSeasonId);
   const resetMatchResultMutation = useResetMatchResultMutation(selectedSeasonId);
+  const matchDetailQuery = useMatchQuery(params.matchId ?? null);
 
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
   const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
@@ -286,6 +270,10 @@ export function AdminMatchesRoute() {
     resetMatchResultMutation.isPending;
 
   useEffect(() => {
+    if (params.matchId) {
+      return;
+    }
+
     if (selectedTournamentId && tournamentOptions.some((option) => option.id === selectedTournamentId)) {
       return;
     }
@@ -296,7 +284,22 @@ export function AdminMatchesRoute() {
     }
 
     setSelectedTournamentId(null);
-  }, [selectedTournamentId, tournamentOptions]);
+  }, [params.matchId, selectedTournamentId, tournamentOptions]);
+
+  useEffect(() => {
+    const matchDetail = matchDetailQuery.data;
+
+    if (!params.matchId || !matchDetail) {
+      return;
+    }
+
+    const tournamentForMatch =
+      tournamentOptions.find((tournament) => tournament.mainSeasonId === matchDetail.season_id) ?? null;
+
+    if (tournamentForMatch && tournamentForMatch.id !== selectedTournamentId) {
+      setSelectedTournamentId(tournamentForMatch.id);
+    }
+  }, [matchDetailQuery.data, params.matchId, selectedTournamentId, tournamentOptions]);
 
   useEffect(() => {
     if (params.matchId) {
@@ -372,11 +375,16 @@ export function AdminMatchesRoute() {
         season_id: selectedSeasonId,
         home_team_id: form.homeTeamId,
         away_team_id: form.awayTeamId,
-        scheduled_at: getScheduledAt(form.date, form.time),
+        scheduled_at: buildMatchDateTime(form.date, form.time),
         venue,
         status: form.status,
         sets
       };
+
+      if (params.matchId && !selectedMatch) {
+        setFormError('La partita richiesta non è ancora caricata. Attendi il caricamento e riprova.');
+        return;
+      }
 
       if (selectedMatch) {
         await updateMatchMutation.mutateAsync({ id: selectedMatch.id, ...payload });
@@ -429,7 +437,7 @@ export function AdminMatchesRoute() {
     <section className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Admin</p>
+          <p className={styles.eyebrow}>Area admin</p>
           <h1 className={styles.title}>Partite</h1>
         </div>
         <button className={styles.button} disabled={!selectedSeasonId} onClick={handleNewMatch} type="button">
@@ -582,10 +590,10 @@ export function AdminMatchesRoute() {
                   }}
                   value={form.status}
                 >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="played">Played</option>
-                  <option value="postponed">Postponed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="scheduled">Da disputare</option>
+                  <option value="played">Giocata</option>
+                  <option value="postponed">Rinviata</option>
+                  <option value="cancelled">Annullata</option>
                 </select>
               </label>
             </div>
@@ -710,9 +718,9 @@ export function AdminMatchesRoute() {
                 <strong>
                   {getTeamName(match.home_team_id)} vs {getTeamName(match.away_team_id)}
                 </strong>
-                <span>{formatDateTime(match.scheduled_at)}</span>
+                <span>{formatMatchDateTime(match.scheduled_at)}</span>
                 <span>
-                  {match.status} · {getScoreLabel(match)} · {getSetsLabel(match)}
+                  {getStatusLabel(match.status)} · {getScoreLabel(match)} · {getSetsLabel(match)}
                 </span>
               </button>
             ))}
@@ -739,12 +747,12 @@ export function AdminMatchesRoute() {
                       handleSelectMatch(match);
                     }}
                   >
-                    <td>{formatDateTime(match.scheduled_at)}</td>
+                    <td>{formatMatchDateTime(match.scheduled_at)}</td>
                     <td>
                       {getTeamName(match.home_team_id)} vs {getTeamName(match.away_team_id)}
                     </td>
                     <td>{match.venue ?? '-'}</td>
-                    <td>{match.status}</td>
+                    <td>{getStatusLabel(match.status)}</td>
                     <td>{getScoreLabel(match)}</td>
                     <td>{getSetsLabel(match)}</td>
                   </tr>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createMatch,
   generateRoundRobinCalendar,
+  getMatchById,
   listMatchesBySeason,
   resetMatchResult,
   updateMatch,
@@ -12,8 +13,17 @@ import {
 
 export const matchQueryKeys = {
   all: ['matches'] as const,
+  detail: (matchId: string) => [...matchQueryKeys.all, 'detail', matchId] as const,
   bySeason: (seasonId: string) => [...matchQueryKeys.all, 'by-season', seasonId] as const
 };
+
+export function useMatchQuery(matchId: string | null) {
+  return useQuery({
+    queryKey: matchQueryKeys.detail(matchId ?? 'none'),
+    queryFn: () => getMatchById(matchId ?? ''),
+    enabled: Boolean(matchId)
+  });
+}
 
 export function useMatchesBySeasonQuery(seasonId: string | null) {
   return useQuery({

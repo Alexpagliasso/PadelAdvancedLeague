@@ -39,7 +39,7 @@ export function LoginRoute() {
       const fallbackPath = isAdminRole(profile?.role) ? appPaths.admin : appPaths.profile;
       void navigate(state?.from?.pathname ?? fallbackPath, { replace: true });
     } catch (nextError) {
-      setSubmitError(nextError instanceof Error ? nextError.message : 'Login failed.');
+      setSubmitError(nextError instanceof Error ? nextError.message : 'Accesso non riuscito.');
     }
   };
 

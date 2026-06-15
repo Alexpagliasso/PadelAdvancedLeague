@@ -1,6 +1,8 @@
 import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMatchesBySeasonQuery } from '@/features/matches/api/matchesQueries';
+import { formatMatchDate } from '@/features/matches/lib/matchDateTime';
+import { getUniqueMatchesByFixture, isMatchPlayed } from '@/features/matches/lib/matchStatus';
 import { usePlayersQuery } from '@/features/players/api/playersQueries';
 import {
   useCreateTeamMutation,
@@ -61,7 +63,17 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Errore imprevisto.';
+}
+
+function getTournamentStatusLabel(status: TournamentStatus): string {
+  const labels: Record<TournamentStatus, string> = {
+    draft: 'Bozza',
+    active: 'Attivo',
+    archived: 'Archiviato'
+  };
+
+  return labels[status];
 }
 
 function cx(...classes: (string | undefined | false)[]): string {
@@ -80,16 +92,6 @@ function tournamentToForm(tournament: TournamentWithSeasons | null): TournamentF
     status: tournament.status,
     isPublic: tournament.is_public
   };
-}
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('it-IT', {
-    dateStyle: 'medium'
-  }).format(new Date(value));
 }
 
 export function AdminTournamentsRoute() {
@@ -120,12 +122,11 @@ export function AdminTournamentsRoute() {
   const createTeamMutation = useCreateTeamMutation(selectedMainSeasonId);
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
   const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
-  const playedMatchesCount = matches.filter(
-    (match) => match.status === 'played' && match.result_status === 'official'
-  ).length;
-  const pendingMatchesCount = Math.max(0, matches.length - playedMatchesCount);
+  const uniqueMatches = useMemo(() => getUniqueMatchesByFixture(matches), [matches]);
+  const playedMatchesCount = uniqueMatches.filter(isMatchPlayed).length;
+  const pendingMatchesCount = Math.max(uniqueMatches.length - playedMatchesCount, 0);
   const completionPercentage =
-    matches.length > 0 ? Math.round((playedMatchesCount / matches.length) * 100) : 0;
+    uniqueMatches.length > 0 ? Math.round((playedMatchesCount / uniqueMatches.length) * 100) : 0;
   const calendarGeneratedAt =
     matches.length > 0
       ? [...matches].sort((first, second) => first.created_at.localeCompare(second.created_at))[0]
@@ -294,9 +295,9 @@ export function AdminTournamentsRoute() {
                   <strong>{tournament.name}</strong>
                   <br />
                   <span className={styles.muted}>
-                    {tournament.status}
+                    {getTournamentStatusLabel(tournament.status)}
                     {tournament.seasons.some((season) => season.slug === 'main')
-                      ? ' · demo ready'
+                      ? ' · demo pronta'
                       : ''}
                   </span>
                 </button>
@@ -376,9 +377,9 @@ export function AdminTournamentsRoute() {
                   }}
                   value={tournamentForm.status}
                 >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="archived">Archived</option>
+                  <option value="draft">Bozza</option>
+                  <option value="active">Attivo</option>
+                  <option value="archived">Archiviato</option>
                 </select>
               </label>
 
@@ -441,7 +442,7 @@ export function AdminTournamentsRoute() {
                 </div>
                 <div className={styles.statCard}>
                   <span>Partite</span>
-                  <strong>{matches.length}</strong>
+                  <strong>{uniqueMatches.length}</strong>
                 </div>
                 <div className={styles.statCard}>
                   <span>Giocate</span>
@@ -456,7 +457,7 @@ export function AdminTournamentsRoute() {
               <div className={styles.progressBlock}>
                 <div className={styles.progressHeader}>
                   <strong>
-                    {playedMatchesCount} / {matches.length} partite completate
+                    {playedMatchesCount} / {uniqueMatches.length} partite completate
                   </strong>
                   <span>{completionPercentage}%</span>
                 </div>
@@ -467,7 +468,7 @@ export function AdminTournamentsRoute() {
                   />
                 </div>
                 {calendarGeneratedAt ? (
-                  <p className={styles.muted}>Calendario generato il {formatDate(calendarGeneratedAt)}</p>
+                  <p className={styles.muted}>Calendario generato il {formatMatchDate(calendarGeneratedAt)}</p>
                 ) : (
                   <p className={styles.muted}>Calendario non ancora generato.</p>
                 )}

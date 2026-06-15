@@ -16,6 +16,21 @@ export type PublicTournamentData = {
   matches: MatchWithSets[];
 };
 
+export async function listPublicTournaments(): Promise<PublicTournament[]> {
+  const { data, error } = await supabase
+    .from('tournaments')
+    .select('*')
+    .eq('is_public', true)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 async function getPublicTournament(slug: string | null): Promise<PublicTournament | null> {
   const query = supabase
     .from('tournaments')

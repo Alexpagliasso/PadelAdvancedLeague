@@ -8,7 +8,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Errore imprevisto.';
 }
 
 export function AdminDashboardRoute() {
@@ -36,7 +36,7 @@ export function AdminDashboardRoute() {
       <section className={styles.page}>
         <header className={styles.previewHeader}>
           <div>
-            <p className={styles.eyebrow}>Admin</p>
+            <p className={styles.eyebrow}>Area admin</p>
             <h1>Anteprima torneo attivo</h1>
           </div>
         </header>
@@ -53,7 +53,7 @@ export function AdminDashboardRoute() {
       header={
         <header className={styles.previewHeader}>
           <div>
-            <p className={styles.eyebrow}>Admin</p>
+            <p className={styles.eyebrow}>Area admin</p>
             <h1>Anteprima torneo attivo</h1>
             <span>{data.tournament.name}</span>
           </div>

@@ -15,7 +15,7 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
   {
-    label: 'Home Pubblica',
+    label: 'Home pubblica',
     to: appPaths.home,
     isActive: (pathname) => pathname === appPaths.home,
     variant: 'public'
@@ -108,7 +108,7 @@ function getAdminTitle(pathname: string): string {
     return 'PAD | Impostazioni';
   }
 
-  return 'PAD | Admin';
+  return 'PAD | Area admin';
 }
 
 export function AdminLayout() {
@@ -137,7 +137,7 @@ export function AdminLayout() {
       <header className={styles.mobileHeader}>
         <button
           aria-expanded={isMobileMenuOpen}
-          aria-label="Open admin menu"
+          aria-label="Apri menu admin"
           className={styles.menuButton}
           onClick={() => {
             setIsMobileMenuOpen((current) => !current);
@@ -155,7 +155,7 @@ export function AdminLayout() {
       </header>
 
       <button
-        aria-label="Close admin menu"
+        aria-label="Chiudi menu admin"
         className={cx(styles.overlay, isMobileMenuOpen && styles.overlayVisible)}
         onClick={() => {
           setIsMobileMenuOpen(false);
@@ -172,7 +172,7 @@ export function AdminLayout() {
           </div>
         </div>
 
-        <nav className={styles.nav} aria-label="Admin">
+        <nav className={styles.nav} aria-label="Menu admin">
           {navigationItems.map((item) => (
             <Link
               className={cx(
@@ -192,7 +192,7 @@ export function AdminLayout() {
         </nav>
 
         <div className={styles.account}>
-          <span>{profile?.full_name ?? 'Admin'}</span>
+          <span>{profile?.full_name ?? 'Amministratore'}</span>
           <button
             className={styles.logoutButton}
             onClick={() => {
@@ -200,7 +200,7 @@ export function AdminLayout() {
             }}
             type="button"
           >
-            Logout
+            Esci
           </button>
         </div>
       </aside>

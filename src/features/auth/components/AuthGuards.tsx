@@ -14,7 +14,7 @@ type RoleGuardProps = GuardProps & {
 };
 
 function LoadingRoute() {
-  return <p>Loading...</p>;
+  return <p>Caricamento...</p>;
 }
 
 export function RequireAuth({ children }: GuardProps) {
