@@ -1,0 +1,167 @@
+.page {
+  padding: 1rem;
+}
+
+.header,
+.toolbar,
+.panel {
+  margin: 0 auto;
+  max-width: 86rem;
+}
+
+.header {
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.toolbar {
+  margin-bottom: 1rem;
+}
+
+.panel {
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.summary {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.select {
+  width: 100%;
+  border: 1px solid #cbd8d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: var(--color-text);
+  padding: 0.7rem 0.8rem;
+}
+
+.mobileList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid #d9e4df;
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cardHeader span {
+  color: #0b1f1a;
+  font-weight: 700;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.statsGrid div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.statsGrid dt {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.statsGrid dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.tableWrap {
+  display: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #edf2ef;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.table th {
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  margin: 0 0 0.75rem;
+  color: #a02525;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 860px) {
+  .page {
+    padding: 1.5rem;
+  }
+
+  .field {
+    max-width: 28rem;
+  }
+
+  .mobileList {
+    display: none;
+  }
+
+  .tableWrap {
+    display: block;
+    overflow-x: auto;
+  }
+}

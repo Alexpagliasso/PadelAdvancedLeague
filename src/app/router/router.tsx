@@ -16,6 +16,7 @@ import { AdminDashboardRoute } from '@/features/admin/routes/AdminDashboardRoute
 import { AdminPlaceholderRoute } from '@/features/admin/routes/AdminPlaceholderRoute';
 import { AdminMatchesRoute } from '@/features/matches/routes/AdminMatchesRoute';
 import { AdminPlayersRoute } from '@/features/players/routes/AdminPlayersRoute';
+import { AdminStandingsRoute } from '@/features/standings/routes/AdminStandingsRoute';
 import { AdminTeamsRoute } from '@/features/teams/routes/AdminTeamsRoute';
 import { AdminTournamentsRoute } from '@/features/tournaments/routes/AdminTournamentsRoute';
 
@@ -118,6 +119,10 @@ export const router = createBrowserRouter([
           {
             path: 'matches',
             element: <AdminMatchesRoute />
+          },
+          {
+            path: 'standings',
+            element: <AdminStandingsRoute />
           },
           {
             path: 'gallery',

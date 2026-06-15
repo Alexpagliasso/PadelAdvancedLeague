@@ -39,6 +39,11 @@ const navigationItems: NavigationItem[] = [
     isActive: (pathname) => pathname.startsWith(appPaths.adminMatches)
   },
   {
+    label: 'Classifica',
+    to: appPaths.adminStandings,
+    isActive: (pathname) => pathname.startsWith(appPaths.adminStandings)
+  },
+  {
     label: 'Gallery',
     to: appPaths.adminGallery,
     isActive: (pathname) => pathname.startsWith(appPaths.adminGallery)
