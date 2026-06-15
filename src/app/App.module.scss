@@ -1,0 +1,20 @@
+.appShell {
+  min-height: 100dvh;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.routeFrame {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 2rem;
+}
+
+.routeMessage {
+  max-width: 42rem;
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  text-align: center;
+}
