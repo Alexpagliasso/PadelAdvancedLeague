@@ -62,7 +62,7 @@ async function validateTeamMembers(
   const conflictingMembership = data.find((membership) => membership.team_id !== currentTeamId);
 
   if (conflictingMembership) {
-    throw new Error('A player can belong to only one team in the selected season.');
+    throw new Error('Un giocatore può appartenere a una sola squadra nello stesso torneo.');
   }
 }
 

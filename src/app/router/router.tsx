@@ -122,10 +122,6 @@ export const router = createBrowserRouter([
             element: <AdminStandingsRoute />
           },
           {
-            path: 'gallery',
-            element: <AdminPlaceholderRoute title="Gallery" />
-          },
-          {
             path: 'settings',
             element: <AdminPlaceholderRoute title="Impostazioni" />
           }

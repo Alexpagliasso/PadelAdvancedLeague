@@ -8,7 +8,6 @@ export const appPaths = {
   adminMatches: '/admin/matches',
   adminCalendar: '/admin/calendar',
   adminStandings: '/admin/standings',
-  adminGallery: '/admin/gallery',
   adminSettings: '/admin/settings',
   profile: '/profile'
 } as const;

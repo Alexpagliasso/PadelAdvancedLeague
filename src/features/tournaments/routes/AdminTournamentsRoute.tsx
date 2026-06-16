@@ -173,7 +173,7 @@ export function AdminTournamentsRoute() {
     setTeamFormError(null);
 
     if (!selectedMainSeasonId) {
-      setTeamFormError('Questo torneo non ha una stagione principale disponibile.');
+      setTeamFormError('Questo torneo non è ancora pronto per gestire le squadre.');
       return;
     }
 
@@ -298,9 +298,6 @@ export function AdminTournamentsRoute() {
                   <br />
                   <span className={styles.muted}>
                     {getTournamentStatusLabel(tournament.status)}
-                    {tournament.seasons.some((season) => season.slug === 'main')
-                      ? ' · demo pronta'
-                      : ''}
                   </span>
                 </button>
               </li>
@@ -487,7 +484,7 @@ export function AdminTournamentsRoute() {
                 <div>
                   <h2 className={styles.panelTitle}>Squadre del torneo</h2>
                   <p className={styles.muted}>
-                    Le squadre vengono salvate automaticamente nella season principale.
+                    Gestisci le squadre collegate a questo torneo.
                   </p>
                 </div>
                 <span className={styles.badge}>{teams.length} squadre</span>

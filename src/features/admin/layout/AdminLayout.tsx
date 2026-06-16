@@ -5,7 +5,6 @@ import {
   FaGaugeHigh,
   FaGear,
   FaHouse,
-  FaImages,
   FaPeopleGroup,
   FaRankingStar,
   FaRightFromBracket,
@@ -79,12 +78,6 @@ const navigationItems: NavigationItem[] = [
     isActive: (pathname) => pathname.startsWith(appPaths.adminStandings)
   },
   {
-    icon: FaImages,
-    label: 'Gallery',
-    to: appPaths.adminGallery,
-    isActive: (pathname) => pathname.startsWith(appPaths.adminGallery)
-  },
-  {
     icon: FaGear,
     label: 'Impostazioni',
     to: appPaths.adminSettings,
@@ -119,10 +112,6 @@ function getAdminTitle(pathname: string): string {
 
   if (pathname.startsWith(appPaths.adminStandings)) {
     return 'PAD | Classifica';
-  }
-
-  if (pathname.startsWith(appPaths.adminGallery)) {
-    return 'PAD | Gallery';
   }
 
   if (pathname.startsWith(appPaths.adminMatches)) {
