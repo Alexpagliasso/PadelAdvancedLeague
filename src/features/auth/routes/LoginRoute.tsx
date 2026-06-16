@@ -1,5 +1,5 @@
 import { type SyntheticEvent, useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
 import { isAdminRole } from '@/features/auth/api/authApi';
@@ -48,6 +48,14 @@ export function LoginRoute() {
   return (
     <section className={styles.page}>
       <form className={styles.form} onSubmit={(event) => void handleSubmit(event)}>
+        <header className={styles.brandHeader}>
+          <img alt="PAD" className={styles.brandLogo} src="/assets/brand/pad-logo.png" />
+          <div>
+            <h1>PAD</h1>
+            <p>Padel And Drink</p>
+          </div>
+        </header>
+
         <label className={styles.field}>
           <span className={styles.label}>Email</span>
           <input
@@ -85,6 +93,10 @@ export function LoginRoute() {
         <button className={styles.button} disabled={isSubmitting} type="submit">
           {isSubmitting ? 'Accesso...' : 'Accedi'}
         </button>
+
+        <Link className={styles.publicLink} to={appPaths.home}>
+          Torna alla versione utente
+        </Link>
       </form>
     </section>
   );

@@ -26,27 +26,146 @@
 .hero {
   display: grid;
   position: relative;
-  gap: 1rem;
+  gap: 0.75rem;
   border-bottom: 1px solid var(--pad-public-border);
-  background:
-    radial-gradient(circle at top, rgb(21 155 255 / 16%), transparent 18rem),
-    linear-gradient(180deg, var(--pad-public-blue-soft), var(--pad-public-surface));
+  background: var(--pad-public-surface);
   color: var(--pad-public-navy);
-  padding: 1rem 1rem 1.8rem;
+  padding: 0.75rem 1rem 1rem;
 }
 
-.nav {
-  display: flex;
+.selectionPage {
+  min-height: 100dvh;
+  background:
+    linear-gradient(rgb(6 26 77 / 38%), rgb(6 26 77 / 38%)),
+    url('/assets/brand/pad-auth-bg-mobile.png') center / cover no-repeat;
+}
+
+.selectionHero {
+  min-height: 100dvh;
+  border-bottom: 0;
+  background: transparent;
+  color: #ffffff;
+  padding-bottom: 1.25rem;
+}
+
+.brandBar {
+  display: grid;
+  position: relative;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.65rem 0.75rem;
   margin: 0 auto;
   width: 100%;
   max-width: 72rem;
+  z-index: 1;
 }
 
-.nav strong {
+.brandIdentity {
+  display: inline-flex;
+  grid-column: 1;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.brandLogo {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.brandText {
+  display: grid;
+  min-width: 0;
+  line-height: 1.05;
+}
+
+.brandText strong {
   color: var(--pad-public-navy);
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+
+.brandText small {
+  color: var(--pad-public-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.brandBarContent {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.brandActions {
+  display: inline-flex;
+  grid-column: 3;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.mobileActionMenu {
+  display: none;
+  position: relative;
+  grid-column: 3;
+  justify-self: end;
+}
+
+.mobileMenuButton {
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--pad-public-blue-border);
+  border-radius: 999px;
+  background: var(--pad-public-surface);
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  place-items: center;
+  box-shadow: 0 0.75rem 1.5rem rgb(6 26 77 / 12%);
+}
+
+.mobileMenuButton svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.mobileMenuPanel {
+  display: grid;
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  gap: 0.45rem;
+  min-width: 14rem;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 96%);
+  padding: 0.55rem;
+  box-shadow: 0 1rem 2.4rem rgb(2 11 38 / 20%);
+  z-index: 20;
+}
+
+.mobileMenuPanel .changeCompetitionButton,
+.mobileMenuPanel .adminLink {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 2.75rem;
+  max-width: none;
+}
+
+.mobileMenuPanel .adminLink {
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+}
+
+.mobileMenuPanel .adminLinkText {
+  position: static;
+  overflow: visible;
+  width: auto;
+  height: auto;
+  clip: auto;
+  white-space: normal;
 }
 
 .adminLink {
@@ -60,6 +179,56 @@
   color: var(--pad-public-navy);
   padding: 0.55rem 0.75rem;
   text-decoration: none;
+}
+
+.changeCompetitionButton {
+  min-height: 2.5rem;
+  border: 1px solid var(--pad-public-orange-border);
+  border-radius: 999px;
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 900;
+  padding: 0.55rem 0.8rem;
+  white-space: nowrap;
+}
+
+.changeCompetitionButton:hover {
+  background: #ffd8b0;
+}
+
+.tournamentHeader {
+  background: var(--pad-public-surface);
+}
+
+.selectedCompetition {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.selectedCompetition h1,
+.selectedCompetition p {
+  margin: 0;
+}
+
+.selectedCompetition h1 {
+  overflow: hidden;
+  color: var(--pad-public-navy);
+  font-size: clamp(1.2rem, 5vw, 1.45rem);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectedCompetition p {
+  overflow: hidden;
+  color: var(--pad-public-muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .adminLink:hover {
@@ -78,27 +247,21 @@
 
 .heroContent {
   display: grid;
-  justify-items: center;
-  gap: 0.7rem;
+  position: relative;
+  justify-items: stretch;
+  gap: 0.6rem;
   margin: 0 auto;
   width: 100%;
   max-width: 72rem;
-  padding-top: 0.25rem;
-  text-align: center;
-}
-
-.heroLogo {
-  width: clamp(5rem, 18vw, 6rem);
-  height: auto;
-  margin-bottom: 0.45rem;
-  object-fit: contain;
+  text-align: left;
+  z-index: 1;
 }
 
 .heroContent h1 {
   color: var(--pad-public-navy);
   margin: 0;
-  font-size: clamp(1.5rem, 5vw, 2rem);
-  line-height: 1.08;
+  font-size: clamp(1.35rem, 5vw, 1.5rem);
+  line-height: 1.12;
 }
 
 .heroContent p {
@@ -108,12 +271,14 @@
   line-height: 1.55;
 }
 
-.brandTagline {
-  display: none;
-}
-
 .tournamentHeroCard {
-  display: contents;
+  display: grid;
+  gap: 0.45rem;
+  width: 100%;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 0.9rem;
+  background: var(--pad-public-blue-soft);
+  padding: 0.75rem;
 }
 
 .heroHint {
@@ -129,14 +294,18 @@
 
 .tournamentSelect {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.6rem;
   width: 100%;
   max-width: 28rem;
   color: var(--pad-public-navy);
   font-size: 0.85rem;
   font-weight: 800;
-  text-align: left;
+  text-align: center;
   text-transform: uppercase;
+}
+
+.tournamentSelect span {
+  text-align: center;
 }
 
 .tournamentSelect select {
@@ -150,12 +319,207 @@
   text-transform: none;
 }
 
+.selectionPage .brandText strong,
+.selectionPage .brandText small {
+  color: #ffffff;
+}
+
+.selectionPage .adminLink {
+  border-color: rgb(215 240 255 / 55%);
+  background: rgb(255 255 255 / 92%);
+}
+
+.selectionPage .tournamentHeroCard {
+  border-color: rgb(255 255 255 / 55%);
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 1.5rem 3rem rgb(2 11 38 / 24%);
+}
+
+.selectionIntroCard {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  color: #ffffff;
+  text-align: center;
+}
+
+.selectionLogo {
+  width: 3.75rem;
+  height: 3.75rem;
+  object-fit: contain;
+}
+
+.selectionIntroCard h1,
+.selectionIntroCard p {
+  margin: 0;
+}
+
+.selectionIntroCard h1 {
+  color: #ffffff;
+  font-size: clamp(1.45rem, 6vw, 2rem);
+  line-height: 1.1;
+}
+
+.selectionIntroCard p {
+  color: #d7f0ff;
+  font-weight: 700;
+}
+
 .competitionCards {
-  display: none;
+  display: grid;
+  gap: 0.8rem;
+  width: min(100%, 68rem);
+  margin: 0 auto;
 }
 
 .selectionSelect {
   display: contents;
+}
+
+.competitionCard {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 5.25rem;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 1.15rem;
+  background: rgb(255 255 255 / 92%);
+  color: var(--pad-public-text);
+  cursor: pointer;
+  padding: 0.9rem;
+  text-align: left;
+  box-shadow: 0 1.25rem 2.25rem rgb(6 26 77 / 18%);
+  backdrop-filter: blur(0.7rem);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.competitionCard:hover,
+.competitionCard:focus-visible {
+  border-color: var(--pad-public-orange-border);
+  background: #ffffff;
+  box-shadow: 0 1.5rem 2.75rem rgb(6 26 77 / 24%);
+  transform: translateY(-1px);
+}
+
+.competitionIcon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--pad-public-orange-border);
+  border-radius: 1rem;
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+  place-items: center;
+}
+
+.competitionBody {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.competitionBody strong {
+  overflow: hidden;
+  color: var(--pad-public-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.competitionBody small {
+  overflow: hidden;
+  color: var(--pad-public-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.competitionBody em {
+  width: max-content;
+  border-radius: 999px;
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 800;
+  padding: 0.16rem 0.5rem;
+}
+
+.createCompetitionCard .competitionIcon {
+  border-color: var(--pad-public-blue-border);
+  background: var(--pad-public-blue-soft);
+}
+
+.modalOverlay {
+  display: grid;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(2 11 38 / 62%);
+  padding: 1rem;
+  place-items: center;
+}
+
+.modalCard {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 28rem);
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 1.25rem;
+  background: rgb(255 255 255 / 96%);
+  color: var(--pad-public-text);
+  padding: 1.15rem;
+  box-shadow: 0 1.5rem 4rem rgb(2 11 38 / 32%);
+}
+
+.modalCard h2,
+.modalCard p {
+  margin: 0;
+}
+
+.modalCard h2 {
+  color: var(--pad-public-navy);
+  font-size: 1.2rem;
+}
+
+.modalCard p {
+  color: var(--pad-public-muted);
+  line-height: 1.55;
+}
+
+.modalActions {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.modalPrimaryAction,
+.modalSecondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 900;
+  padding: 0.7rem 1rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.modalPrimaryAction {
+  border: 0;
+  background: var(--pad-public-orange);
+  color: #061a4d;
+}
+
+.modalSecondaryAction {
+  border: 1px solid var(--pad-public-blue-border);
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
 }
 
 .content {
@@ -163,7 +527,7 @@
   gap: 1rem;
   margin: 0 auto;
   max-width: 72rem;
-  padding: 1rem;
+  padding: 0.85rem 1rem 1rem;
 }
 
 .tabs {
@@ -940,13 +1304,76 @@
 }
 
 @media (min-width: 768px) {
-  .hero {
-    padding: 1.25rem 1.5rem 2.5rem;
+  .selectionPage {
+    background:
+      linear-gradient(rgb(6 26 77 / 34%), rgb(6 26 77 / 34%)),
+      url('/assets/brand/pad-auth-bg-desktop.png') center / cover no-repeat;
   }
 
-  .heroLogo {
-    width: clamp(5rem, 8vw, 6rem);
-    margin-bottom: 0.5rem;
+  .hero {
+    gap: 0.85rem;
+    padding: 0.9rem 1.5rem 1.1rem;
+  }
+
+  .tournamentHeader {
+    min-height: 5rem;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .tournamentHeader .brandBar {
+    grid-template-columns: auto minmax(16rem, 1fr) auto;
+    column-gap: clamp(1.75rem, 4vw, 3.5rem);
+  }
+
+  .selectionHero {
+    min-height: 100dvh;
+    padding: 1rem 1.5rem;
+  }
+
+  .selectionHero .heroContent {
+    align-content: center;
+    justify-items: center;
+    min-height: calc(100dvh - 6rem);
+  }
+
+  .selectionIntroCard {
+    margin-bottom: 0.35rem;
+  }
+
+  .selectionLogo {
+    width: 4.25rem;
+    height: 4.25rem;
+  }
+
+  .competitionCards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .brandLogo {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .brandText strong {
+    font-size: 1.25rem;
+  }
+
+  .brandText small {
+    font-size: 0.82rem;
+  }
+
+  .selectedCompetition h1 {
+    font-size: clamp(1.45rem, 2.3vw, 1.75rem);
+  }
+
+  .tournamentHeroCard {
+    max-width: 36rem;
+    padding: 0.8rem 1rem;
+  }
+
+  .heroContent h1 {
+    font-size: clamp(1.65rem, 3vw, 2rem);
   }
 
   .tournamentSelect {
@@ -954,7 +1381,7 @@
   }
 
   .content {
-    padding: 1.5rem;
+    padding: 1.15rem 1.5rem 1.5rem;
   }
 
   .standingsList {
@@ -1133,22 +1560,80 @@
     color: var(--pad-public-text);
   }
 
+  .selectionPage {
+    background:
+      linear-gradient(rgb(6 26 77 / 38%), rgb(6 26 77 / 38%)),
+      url('/assets/brand/pad-auth-bg-mobile.png') center / cover no-repeat;
+  }
+
   .hero {
     border-bottom: 1px solid var(--pad-public-border);
-    background:
-      radial-gradient(circle at top, rgb(21 155 255 / 14%), transparent 14rem),
-      linear-gradient(180deg, var(--pad-public-surface), var(--pad-public-bg));
+    background: var(--pad-public-surface);
     color: var(--pad-public-text);
     padding: max(0.75rem, env(safe-area-inset-top)) 1rem 0.75rem;
   }
 
-  .nav {
-    position: absolute;
-    top: max(0.85rem, env(safe-area-inset-top));
-    right: 1rem;
-    justify-content: flex-end;
-    gap: 0.45rem;
-    width: auto;
+  .selectionHero {
+    min-height: 100dvh;
+    border-bottom: 0;
+    background: transparent;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .brandBar {
+    grid-template-columns: auto 1fr auto;
+    gap: 0.55rem 0.75rem;
+  }
+
+  .brandActions {
+    display: none;
+  }
+
+  .mobileActionMenu {
+    display: block;
+  }
+
+  .brandBarContent {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    width: min(100%, 28rem);
+    padding: 0.2rem 0 0.05rem;
+    text-align: center;
+  }
+
+  .selectedCompetition {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .selectedCompetition h1 {
+    display: -webkit-box;
+    overflow: hidden;
+    max-width: 100%;
+    color: var(--pad-public-navy);
+    font-size: clamp(1.05rem, 5vw, 1.32rem);
+    line-height: 1.16;
+    text-align: center;
+    text-overflow: clip;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .selectedCompetition p {
+    display: none;
+  }
+
+  .brandText small {
+    display: none;
+  }
+
+  .changeCompetitionButton {
+    max-width: 7.35rem;
+    overflow: hidden;
+    padding-inline: 0.7rem;
+    text-overflow: ellipsis;
   }
 
   .adminLink {
@@ -1191,29 +1676,17 @@
   }
 
   .heroContent {
-    justify-items: center;
-    gap: 0.45rem;
-    padding-top: 1.95rem;
-    text-align: center;
+    gap: 0.55rem;
+    padding-top: 0;
+    text-align: left;
   }
 
-  .heroLogo {
-    width: clamp(3.5rem, 18vw, 4.5rem);
-    margin: 0;
-    object-fit: contain;
-  }
-
-  .brandTagline {
-    display: block;
-    margin: 0 0 0.25rem;
-    color: var(--pad-public-muted);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+  .selectionHero .heroContent {
+    align-content: center;
+    min-height: calc(100dvh - 5.5rem);
   }
 
   .tournamentHeroCard {
-    display: grid;
     gap: 0.3rem;
     width: 100%;
     max-width: 28rem;
@@ -1221,7 +1694,7 @@
     border-radius: 0.9rem;
     background: var(--pad-public-card);
     padding: 0.75rem;
-    box-shadow: 0 0.65rem 1.4rem rgb(2 11 38 / 18%);
+    box-shadow: 0 0.45rem 1rem rgb(6 26 77 / 8%);
   }
 
   .heroContent h1 {
@@ -1268,6 +1741,7 @@
 
   .tournamentHeroCard .tournamentSelect span {
     color: var(--pad-public-muted);
+    text-align: center;
   }
 
   .tournamentHeroCard .tournamentSelect select {
@@ -1301,6 +1775,11 @@
     padding: 0.9rem;
     text-align: left;
     box-shadow: 0 1.25rem 2.25rem rgb(6 26 77 / 12%);
+  }
+
+  .selectionPage .competitionCard {
+    border-color: rgb(255 255 255 / 55%);
+    background: rgb(255 255 255 / 92%);
   }
 
   .competitionCard:hover,

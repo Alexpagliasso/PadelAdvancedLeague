@@ -1,14 +1,58 @@
 .page {
   display: grid;
+  position: relative;
+  overflow: hidden;
   min-height: 100dvh;
+  background:
+    linear-gradient(rgb(6 26 77 / 34%), rgb(6 26 77 / 34%)),
+    url('/assets/brand/pad-auth-bg-mobile.png') center / cover no-repeat;
   place-items: center;
   padding: 1.5rem;
 }
 
 .form {
   display: grid;
+  position: relative;
+  z-index: 1;
   width: min(100%, 24rem);
   gap: 1rem;
+  border: 1px solid rgb(255 255 255 / 56%);
+  border-radius: 1.2rem;
+  background: rgb(255 255 255 / 92%);
+  padding: 1.2rem;
+  box-shadow: 0 1.5rem 3.5rem rgb(2 11 38 / 26%);
+  backdrop-filter: blur(0.8rem);
+}
+
+.brandHeader {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+.brandLogo {
+  width: 3.15rem;
+  height: 3.15rem;
+  object-fit: contain;
+}
+
+.brandHeader h1,
+.brandHeader p {
+  margin: 0;
+}
+
+.brandHeader h1 {
+  color: var(--pad-navy);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.brandHeader p {
+  color: var(--color-muted);
+  font-weight: 800;
 }
 
 .field {
@@ -52,7 +96,34 @@
   opacity: 0.65;
 }
 
+.publicLink {
+  justify-self: center;
+  color: var(--pad-navy);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+.publicLink:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
 .error {
   color: var(--color-danger-text);
   font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .page {
+    background:
+      linear-gradient(rgb(6 26 77 / 30%), rgb(6 26 77 / 30%)),
+      url('/assets/brand/pad-auth-bg-desktop.png') center / cover no-repeat;
+  }
+
+  .form {
+    padding: 1.35rem;
+  }
 }

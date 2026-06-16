@@ -1,12 +1,13 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import type { IconType } from 'react-icons';
-import { FaCalendarDays, FaMedal, FaRankingStar, FaTrophy, FaUsers } from 'react-icons/fa6';
+import { FaCalendarDays, FaMedal, FaPlus, FaRankingStar, FaTrophy, FaUsers } from 'react-icons/fa6';
 import {
   MdAdminPanelSettings,
   MdCancel,
   MdCheckCircle,
   MdEventBusy,
   MdFilterList,
+  MdMoreVert,
   MdSchedule
 } from 'react-icons/md';
 import { Link, useParams } from 'react-router-dom';
@@ -322,16 +323,20 @@ export function PublicTournamentRoute() {
 
   return (
     <PublicTournamentView
-      data={data}
-      selector={
+      changeCompetitionAction={
         !isSlugRoute && publicTournaments.length > 1 ? (
-          <TournamentSelect
-            onChange={setSelectedSlug}
-            selectedSlug={selectedSlug}
-            tournaments={publicTournaments}
-          />
+          <button
+            className={styles.changeCompetitionButton}
+            onClick={() => {
+              setSelectedSlug(null);
+            }}
+            type="button"
+          >
+            Cambia competizione
+          </button>
         ) : null
       }
+      data={data}
     />
   );
 }
@@ -343,25 +348,17 @@ function PublicTournamentSelectionPage({
   onSelectTournament: (slug: string | null) => void;
   tournaments: PublicTournament[];
 }) {
+  const [createModalStep, setCreateModalStep] = useState<'closed' | 'choice' | 'visitor'>('closed');
+
   return (
-    <main className={cx(styles.page, styles.publicThemeLight)}>
-      <header className={styles.hero}>
-        <nav className={styles.nav}>
-          <Link className={styles.adminLink} to={appPaths.auth}>
-            <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
-            <span className={styles.adminLinkText}>Admin</span>
-          </Link>
-        </nav>
+    <main className={cx(styles.page, styles.publicThemeLight, styles.selectionPage)}>
+      <header className={cx(styles.hero, styles.selectionHero)}>
+        <PublicBrandBar />
         <div className={styles.heroContent}>
-          <img className={styles.heroLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
-          <p className={styles.brandTagline}>Padel And Drink</p>
-          <h1>Competizioni</h1>
-          <div className={styles.selectionSelect}>
-            <TournamentSelect
-              onChange={onSelectTournament}
-              selectedSlug={null}
-              tournaments={tournaments}
-            />
+          <div className={styles.selectionIntroCard}>
+            <img className={styles.selectionLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
+            <h1>Scegli competizione</h1>
+            <p>Seleziona il torneo da seguire</p>
           </div>
           <div className={styles.competitionCards}>
             {tournaments.map((tournament) => (
@@ -383,51 +380,193 @@ function PublicTournamentSelectionPage({
                 </span>
               </button>
             ))}
+            <button
+              className={cx(styles.competitionCard, styles.createCompetitionCard)}
+              onClick={() => {
+                setCreateModalStep('choice');
+              }}
+              type="button"
+            >
+              <span className={styles.competitionIcon}>
+                <FaPlus aria-hidden="true" />
+              </span>
+              <span className={styles.competitionBody}>
+                <strong>Crea nuovo torneo</strong>
+                <small>Vuoi organizzare una nuova competizione?</small>
+              </span>
+            </button>
           </div>
-          <p className={styles.heroHint}>Scegli un torneo per vedere classifica, squadre e calendario.</p>
         </div>
       </header>
+      {createModalStep !== 'closed' ? (
+        <CreateTournamentModal
+          onClose={() => {
+            setCreateModalStep('closed');
+          }}
+          onVisitorContinue={() => {
+            setCreateModalStep('visitor');
+          }}
+          step={createModalStep}
+        />
+      ) : null}
     </main>
   );
 }
 
-function TournamentSelect({
-  onChange,
-  selectedSlug,
-  tournaments
+function CreateTournamentModal({
+  onClose,
+  onVisitorContinue,
+  step
 }: {
-  onChange: (slug: string | null) => void;
-  selectedSlug: string | null;
-  tournaments: PublicTournament[];
+  onClose: () => void;
+  onVisitorContinue: () => void;
+  step: 'choice' | 'visitor';
 }) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   return (
-    <label className={styles.tournamentSelect}>
-      <span>Seleziona torneo</span>
-      <select
-        onChange={(event) => {
-          onChange(event.target.value || null);
-        }}
-        value={selectedSlug ?? ''}
+    <div
+      className={styles.modalOverlay}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <section
+        aria-modal="true"
+        className={styles.modalCard}
+        role="dialog"
+        aria-labelledby="create-tournament-modal-title"
       >
-        <option value="">Seleziona torneo</option>
-        {tournaments.map((tournament) => (
-          <option key={tournament.id} value={tournament.slug}>
-            {tournament.name}
-          </option>
-        ))}
-      </select>
-    </label>
+        {step === 'choice' ? (
+          <>
+            <h2 id="create-tournament-modal-title">Sei gia un utente registrato?</h2>
+            <div className={styles.modalActions}>
+              <Link autoFocus className={styles.modalPrimaryAction} to={appPaths.auth}>
+                Si, accedi
+              </Link>
+              <button className={styles.modalSecondaryAction} onClick={onVisitorContinue} type="button">
+                No, continua come visitatore
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 id="create-tournament-modal-title">Area riservata</h2>
+            <p>
+              Al momento l'area riservata e disponibile solo per utenti registrati. Puoi
+              continuare a consultare tornei, calendari, risultati e classifiche in modalita utente.
+            </p>
+            <button autoFocus className={styles.modalPrimaryAction} onClick={onClose} type="button">
+              Torna alle competizioni
+            </button>
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function PublicBrandBar({
+  actions,
+  children
+}: {
+  actions?: ReactNode;
+  children?: ReactNode;
+}) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!mobileMenuRef.current?.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [isMobileMenuOpen]);
+
+  return (
+    <div className={styles.brandBar}>
+      <span className={styles.brandIdentity}>
+        <img className={styles.brandLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
+        <span className={styles.brandText}>
+          <strong>PAD</strong>
+          <small>Padel And Drink</small>
+        </span>
+      </span>
+      {children ? <div className={styles.brandBarContent}>{children}</div> : null}
+      <div className={styles.brandActions}>
+        {actions}
+        <Link className={styles.adminLink} to={appPaths.auth}>
+          <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
+          <span className={styles.adminLinkText}>Admin</span>
+        </Link>
+      </div>
+      <div className={styles.mobileActionMenu} ref={mobileMenuRef}>
+        <button
+          aria-expanded={isMobileMenuOpen}
+          aria-label="Apri menu"
+          className={styles.mobileMenuButton}
+          onClick={() => {
+            setIsMobileMenuOpen((current) => !current);
+          }}
+          type="button"
+        >
+          <MdMoreVert aria-hidden="true" />
+        </button>
+        {isMobileMenuOpen ? (
+          <div className={styles.mobileMenuPanel}>
+            {actions}
+            <Link aria-label="Login admin" className={styles.adminLink} to={appPaths.auth}>
+              <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
+              <span className={styles.adminLinkText}>Login admin</span>
+            </Link>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
 export function PublicTournamentView({
+  changeCompetitionAction,
   data,
-  header,
-  selector
+  header
 }: {
+  changeCompetitionAction?: ReactNode;
   data: PublicTournamentData;
   header?: ReactNode;
-  selector?: ReactNode;
 }) {
   const [activeTab, setActiveTab] = useState<PublicTab>('standings');
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
@@ -485,22 +624,13 @@ export function PublicTournamentView({
   return (
     <main className={cx(styles.page, styles.publicThemeLight)}>
       {header ?? (
-        <header className={styles.hero}>
-          <nav className={styles.nav}>
-            <Link className={styles.adminLink} to={appPaths.auth}>
-              <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
-              <span className={styles.adminLinkText}>Admin</span>
-            </Link>
-          </nav>
-          <div className={styles.heroContent}>
-            <img className={styles.heroLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
-            <p className={styles.brandTagline}>Padel And Drink</p>
-            <div className={styles.tournamentHeroCard}>
-              <p className={styles.eyebrow}>Torneo attivo</p>
-              {selector ?? <h1>{data.tournament.name}</h1>}
+        <header className={cx(styles.hero, styles.tournamentHeader)}>
+          <PublicBrandBar actions={changeCompetitionAction}>
+            <div className={styles.selectedCompetition}>
+              <h1>{data.tournament.name}</h1>
               {data.tournament.description ? <p>{data.tournament.description}</p> : null}
             </div>
-          </div>
+          </PublicBrandBar>
         </header>
       )}
 
