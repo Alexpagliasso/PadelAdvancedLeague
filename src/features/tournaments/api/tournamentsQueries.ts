@@ -10,11 +10,13 @@ import {
   updateSeason,
   updateSeasonSettings,
   updateTournament,
+  updateTournamentCompetitionSettings,
   updateTournamentStatus,
   type CreateSeasonInput,
   type CreateTournamentInput,
   type UpdateSeasonInput,
   type UpdateSeasonSettingsInput,
+  type UpdateTournamentCompetitionSettingsInput,
   type UpdateTournamentInput
 } from '@/features/tournaments/api/tournamentsApi';
 import type { TournamentStatus } from '@/lib/supabase/types';
@@ -65,6 +67,18 @@ export function useUpdateTournamentMutation() {
 
   return useMutation({
     mutationFn: (input: UpdateTournamentInput) => updateTournament(input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: tournamentQueryKeys.adminList() });
+    }
+  });
+}
+
+export function useUpdateTournamentCompetitionSettingsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: UpdateTournamentCompetitionSettingsInput) =>
+      updateTournamentCompetitionSettings(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: tournamentQueryKeys.adminList() });
     }

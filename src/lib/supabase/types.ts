@@ -6,6 +6,11 @@ export type SeasonStatus = 'draft' | 'active' | 'completed' | 'archived';
 export type MatchPhase = 'regular_season' | 'playoff' | 'playout';
 export type MatchStatus = 'scheduled' | 'played' | 'postponed' | 'cancelled';
 export type ResultStatus = 'pending' | 'official';
+export type TournamentFormat = 'round_robin' | 'knockout' | 'group_playoff_playout';
+export type CompetitionPhase = 'setup' | 'regular_season' | 'knockout' | 'completed';
+export type BracketType = 'knockout' | 'playoff' | 'playout';
+export type BracketStatus = 'draft' | 'generated' | 'completed';
+export type BracketSlot = 'home' | 'away';
 
 type TableDefinition<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
@@ -50,6 +55,16 @@ export type Database = {
           status: TournamentStatus;
           is_public: boolean;
           created_by: string | null;
+          expected_teams_count: number;
+          format: TournamentFormat;
+          current_phase: CompetitionPhase;
+          allow_byes: boolean;
+          playoff_teams_count: number | null;
+          playout_teams_count: number | null;
+          regular_calendar_generated_at: string | null;
+          knockout_generated_at: string | null;
+          playoff_generated_at: string | null;
+          playout_generated_at: string | null;
         }
       >;
       seasons: TableDefinition<
@@ -131,6 +146,35 @@ export type Database = {
           away_games: number;
         }
       >;
+      tournament_brackets: TableDefinition<
+        TimestampFields & {
+          id: string;
+          tournament_id: string;
+          bracket_type: BracketType;
+          name: string;
+          status: BracketStatus;
+          generated_at: string;
+          completed_at: string | null;
+        }
+      >;
+      tournament_bracket_matches: TableDefinition<
+        TimestampFields & {
+          id: string;
+          bracket_id: string;
+          match_id: string | null;
+          round_number: number;
+          round_label: string;
+          position: number;
+          home_seed: number | null;
+          away_seed: number | null;
+          home_team_id: string | null;
+          away_team_id: string | null;
+          winner_team_id: string | null;
+          is_bye: boolean;
+          advances_to_id: string | null;
+          advances_to_slot: BracketSlot | null;
+        }
+      >;
       gallery_albums: TableDefinition<
         TimestampFields & {
           id: string;
@@ -161,6 +205,11 @@ export type Database = {
       match_phase: MatchPhase;
       match_status: MatchStatus;
       result_status: ResultStatus;
+      tournament_format: TournamentFormat;
+      competition_phase: CompetitionPhase;
+      bracket_type: BracketType;
+      bracket_status: BracketStatus;
+      bracket_slot: BracketSlot;
     };
     CompositeTypes: Record<string, never>;
   };

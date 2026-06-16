@@ -1,11 +1,19 @@
 import { supabase } from '@/lib/supabase/client';
-import type { Database, MatchStatus } from '@/lib/supabase/types';
+import type { StandingRow } from '@/features/standings/lib/standingsEngine';
+import type { Database, BracketType, MatchPhase, MatchStatus } from '@/lib/supabase/types';
 
 export type Match = Database['public']['Tables']['matches']['Row'];
 export type MatchSet = Database['public']['Tables']['match_sets']['Row'];
+export type TournamentBracket = Database['public']['Tables']['tournament_brackets']['Row'];
+export type TournamentBracketMatch =
+  Database['public']['Tables']['tournament_bracket_matches']['Row'];
 
 export type MatchWithSets = Match & {
   sets: MatchSet[];
+};
+
+export type TournamentBracketWithMatches = TournamentBracket & {
+  bracketMatches: TournamentBracketMatch[];
 };
 
 export type MatchSetInput = {
@@ -26,6 +34,18 @@ export type SaveMatchInput = {
 
 export type UpdateMatchInput = SaveMatchInput & {
   id: string;
+};
+
+export type GeneratePlayoffPlayoutInput = {
+  tournamentId: string;
+  seasonId: string;
+  standings: StandingRow[];
+};
+
+export type GeneratePlayoffPlayoutResult = {
+  generatedPlayoff: boolean;
+  generatedPlayout: boolean;
+  createdMatches: number;
 };
 
 type ResultSummary = {
@@ -108,6 +128,69 @@ function validateTeams(homeTeamId: string, awayTeamId: string): void {
   }
 }
 
+export function isPowerOfTwo(value: number): boolean {
+  return value > 0 && (value & (value - 1)) === 0;
+}
+
+export function nextPowerOfTwo(value: number): number {
+  if (value <= 1) {
+    return 1;
+  }
+
+  let current = 1;
+  while (current < value) {
+    current *= 2;
+  }
+
+  return current;
+}
+
+export function calculateByeCount(teamCount: number): number {
+  return nextPowerOfTwo(teamCount) - teamCount;
+}
+
+export function pairHighLow<TItem>(items: TItem[]): [TItem, TItem][] {
+  const pairs: [TItem, TItem][] = [];
+
+  for (let index = 0; index < Math.floor(items.length / 2); index += 1) {
+    const highSeed = items[index];
+    const lowSeed = items[items.length - 1 - index];
+
+    if (highSeed && lowSeed) {
+      pairs.push([highSeed, lowSeed]);
+    }
+  }
+
+  return pairs;
+}
+
+function isCompletedMatch(match: MatchWithSets): boolean {
+  const hasSetScore = match.home_sets_won + match.away_sets_won > 0;
+
+  return (
+    match.status === 'played' ||
+    match.result_status === 'official' ||
+    hasSetScore ||
+    match.sets.length > 0
+  );
+}
+
+function getFirstRoundLabel(bracketSize: number): string {
+  if (bracketSize <= 2) {
+    return 'Finale';
+  }
+
+  if (bracketSize === 4) {
+    return 'Semifinale';
+  }
+
+  if (bracketSize === 8) {
+    return 'Quarti';
+  }
+
+  return 'Turno 1';
+}
+
 export async function listMatchesBySeason(seasonId: string): Promise<MatchWithSets[]> {
   const { data: matches, error: matchesError } = await supabase
     .from('matches')
@@ -139,6 +222,42 @@ export async function listMatchesBySeason(seasonId: string): Promise<MatchWithSe
   return matches.map((match) => ({
     ...match,
     sets: sets.filter((set) => set.match_id === match.id)
+  }));
+}
+
+export async function listTournamentBrackets(
+  tournamentId: string
+): Promise<TournamentBracketWithMatches[]> {
+  const { data: brackets, error: bracketsError } = await supabase
+    .from('tournament_brackets')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .order('bracket_type', { ascending: true });
+
+  if (bracketsError) {
+    throw bracketsError;
+  }
+
+  const bracketIds = brackets.map((bracket) => bracket.id);
+
+  if (bracketIds.length === 0) {
+    return [];
+  }
+
+  const { data: bracketMatches, error: bracketMatchesError } = await supabase
+    .from('tournament_bracket_matches')
+    .select('*')
+    .in('bracket_id', bracketIds)
+    .order('round_number', { ascending: true })
+    .order('position', { ascending: true });
+
+  if (bracketMatchesError) {
+    throw bracketMatchesError;
+  }
+
+  return brackets.map((bracket) => ({
+    ...bracket,
+    bracketMatches: bracketMatches.filter((match) => match.bracket_id === bracket.id)
   }));
 }
 
@@ -311,4 +430,285 @@ export async function generateRoundRobinCalendar(
   }
 
   return matchesToInsert.length;
+}
+
+type BracketSeed = {
+  seed: number;
+  teamId: string;
+  teamName: string;
+};
+
+type BracketFixture = {
+  home: BracketSeed | null;
+  away: BracketSeed | null;
+  isBye: boolean;
+};
+
+function generateBracketSeedsWithByes(
+  qualifiedTeams: StandingRow[],
+  allowByes: boolean
+): BracketFixture[] {
+  if (qualifiedTeams.length < 2) {
+    throw new Error('Servono almeno 2 squadre qualificate per generare il tabellone.');
+  }
+
+  const byeCount = calculateByeCount(qualifiedTeams.length);
+
+  if (byeCount > 0 && !allowByes) {
+    throw new Error(
+      'Il numero di squadre qualificate non è una potenza di 2. Abilita i bye automatici.'
+    );
+  }
+
+  const seeds = qualifiedTeams.map((team) => ({
+    seed: team.position,
+    teamId: team.teamId,
+    teamName: team.teamName
+  }));
+
+  const fixtures: BracketFixture[] = [];
+  const teamsWithBye = seeds.slice(0, byeCount);
+  const teamsToPair = seeds.slice(byeCount);
+
+  teamsWithBye.forEach((seed) => {
+    fixtures.push({
+      home: seed,
+      away: null,
+      isBye: true
+    });
+  });
+
+  pairHighLow(teamsToPair).forEach(([home, away]) => {
+    fixtures.push({
+      home,
+      away,
+      isBye: false
+    });
+  });
+
+  return fixtures;
+}
+
+function getExistingGeneratedTypes(
+  tournament: Pick<
+    Database['public']['Tables']['tournaments']['Row'],
+    'playoff_generated_at' | 'playout_generated_at'
+  >,
+  brackets: Pick<TournamentBracket, 'bracket_type'>[],
+  matches: Pick<Match, 'phase'>[]
+): Set<BracketType> {
+  const generatedTypes = new Set<BracketType>();
+
+  if (tournament.playoff_generated_at) {
+    generatedTypes.add('playoff');
+  }
+
+  if (tournament.playout_generated_at) {
+    generatedTypes.add('playout');
+  }
+
+  brackets.forEach((bracket) => {
+    generatedTypes.add(bracket.bracket_type);
+  });
+
+  matches.forEach((match) => {
+    if (match.phase === 'playoff' || match.phase === 'playout') {
+      generatedTypes.add(match.phase);
+    }
+  });
+
+  return generatedTypes;
+}
+
+async function createBracket(
+  tournamentId: string,
+  seasonId: string,
+  bracketType: Extract<BracketType, 'playoff' | 'playout'>,
+  name: string,
+  qualifiedTeams: StandingRow[],
+  allowByes: boolean
+): Promise<number> {
+  const bracketSize = nextPowerOfTwo(qualifiedTeams.length);
+  const roundLabel = getFirstRoundLabel(bracketSize);
+  const fixtures = generateBracketSeedsWithByes(qualifiedTeams, allowByes);
+
+  const { data: bracket, error: bracketError } = await supabase
+    .from('tournament_brackets')
+    .insert({
+      tournament_id: tournamentId,
+      bracket_type: bracketType,
+      name,
+      status: 'generated'
+    })
+    .select('*')
+    .single();
+
+  if (bracketError) {
+    throw bracketError;
+  }
+
+  let createdMatches = 0;
+
+  for (const [index, fixture] of fixtures.entries()) {
+    let matchId: string | null = null;
+
+    if (fixture.home && fixture.away) {
+      const { data: match, error: matchError } = await supabase
+        .from('matches')
+        .insert({
+          season_id: seasonId,
+          phase: bracketType as MatchPhase,
+          home_team_id: fixture.home.teamId,
+          away_team_id: fixture.away.teamId,
+          scheduled_at: null,
+          venue: null,
+          status: 'scheduled',
+          result_status: 'pending',
+          home_sets_won: 0,
+          away_sets_won: 0,
+          notes: null
+        })
+        .select('*')
+        .single();
+
+      if (matchError) {
+        throw matchError;
+      }
+
+      matchId = match.id;
+      createdMatches += 1;
+    }
+
+    const { error: bracketMatchError } = await supabase.from('tournament_bracket_matches').insert({
+      bracket_id: bracket.id,
+      match_id: matchId,
+      round_number: 1,
+      round_label: roundLabel,
+      position: index + 1,
+      home_seed: fixture.home?.seed ?? null,
+      away_seed: fixture.away?.seed ?? null,
+      home_team_id: fixture.home?.teamId ?? null,
+      away_team_id: fixture.away?.teamId ?? null,
+      winner_team_id: fixture.isBye ? fixture.home?.teamId ?? fixture.away?.teamId ?? null : null,
+      is_bye: fixture.isBye,
+      advances_to_id: null,
+      advances_to_slot: null
+    });
+
+    if (bracketMatchError) {
+      throw bracketMatchError;
+    }
+  }
+
+  return createdMatches;
+}
+
+export async function generatePlayoffPlayoutBrackets(
+  input: GeneratePlayoffPlayoutInput
+): Promise<GeneratePlayoffPlayoutResult> {
+  const { data: tournament, error: tournamentError } = await supabase
+    .from('tournaments')
+    .select('*')
+    .eq('id', input.tournamentId)
+    .single();
+
+  if (tournamentError) {
+    throw tournamentError;
+  }
+
+  if (tournament.format !== 'group_playoff_playout') {
+    throw new Error('Questo torneo non usa la formula Girone + playoff/playout.');
+  }
+
+  if (!tournament.playoff_teams_count && !tournament.playout_teams_count) {
+    throw new Error('Configura almeno playoff o playout prima della generazione.');
+  }
+
+  const matches = await listMatchesBySeason(input.seasonId);
+  const regularSeasonMatches = matches.filter((match) => match.phase === 'regular_season');
+
+  if (regularSeasonMatches.length === 0) {
+    throw new Error('Genera e completa il girone prima di creare playoff e playout.');
+  }
+
+  if (!regularSeasonMatches.every(isCompletedMatch)) {
+    throw new Error('Completa tutte le partite del girone prima di generare playoff e playout.');
+  }
+
+  const { data: existingBrackets, error: bracketsError } = await supabase
+    .from('tournament_brackets')
+    .select('id, bracket_type')
+    .eq('tournament_id', input.tournamentId);
+
+  if (bracketsError) {
+    throw bracketsError;
+  }
+
+  const existingFinalMatches = matches.filter(
+    (match) => match.phase === 'playoff' || match.phase === 'playout'
+  );
+  const generatedTypes = getExistingGeneratedTypes(tournament, existingBrackets, existingFinalMatches);
+  let generatedPlayoff = false;
+  let generatedPlayout = false;
+  let createdMatches = 0;
+
+  if (tournament.playoff_teams_count && !generatedTypes.has('playoff')) {
+    const playoffTeams = input.standings.slice(0, tournament.playoff_teams_count);
+
+    if (playoffTeams.length !== tournament.playoff_teams_count) {
+      throw new Error('Non ci sono abbastanza squadre in classifica per generare i playoff.');
+    }
+
+    createdMatches += await createBracket(
+      input.tournamentId,
+      input.seasonId,
+      'playoff',
+      'Playoff',
+      playoffTeams,
+      tournament.allow_byes
+    );
+    generatedPlayoff = true;
+  }
+
+  if (tournament.playout_teams_count && !generatedTypes.has('playout')) {
+    const playoutTeams = input.standings.slice(-tournament.playout_teams_count);
+
+    if (playoutTeams.length !== tournament.playout_teams_count) {
+      throw new Error('Non ci sono abbastanza squadre in classifica per generare i playout.');
+    }
+
+    createdMatches += await createBracket(
+      input.tournamentId,
+      input.seasonId,
+      'playout',
+      'Playout',
+      playoutTeams,
+      tournament.allow_byes
+    );
+    generatedPlayout = true;
+  }
+
+  if (!generatedPlayoff && !generatedPlayout) {
+    throw new Error('Playoff e playout sono già stati generati.');
+  }
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from('tournaments')
+    .update({
+      current_phase: 'knockout',
+      playoff_generated_at: generatedPlayoff ? now : tournament.playoff_generated_at,
+      playout_generated_at: generatedPlayout ? now : tournament.playout_generated_at
+    })
+    .eq('id', input.tournamentId);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return {
+    generatedPlayoff,
+    generatedPlayout,
+    createdMatches
+  };
 }

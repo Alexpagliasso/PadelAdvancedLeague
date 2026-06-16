@@ -84,6 +84,22 @@
   gap: 0.75rem;
 }
 
+.fieldset {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-page);
+  padding: 0.9rem;
+}
+
+.fieldset legend {
+  color: var(--color-text);
+  font-weight: 900;
+  padding: 0 0.25rem;
+}
+
 .field {
   display: grid;
   gap: 0.35rem;
@@ -118,6 +134,63 @@
   font-size: 0.875rem;
 }
 
+.radioCards {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.radioCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  cursor: pointer;
+  padding: 0.75rem;
+}
+
+.radioCard input {
+  margin-top: 0.2rem;
+  accent-color: var(--color-primary);
+}
+
+.radioCard span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.radioCard strong {
+  color: var(--color-text);
+}
+
+.radioCard small {
+  color: var(--color-muted);
+  line-height: 1.35;
+}
+
+.radioCardActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.radioCardDisabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.warningMessage {
+  margin: 0;
+  border: 1px solid var(--pad-orange-border);
+  border-radius: 0.65rem;
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.65rem 0.75rem;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -130,6 +203,159 @@
   border-top: 1px solid var(--color-border);
   margin-top: 1.25rem;
   padding-top: 1.25rem;
+}
+
+.configCard {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-page);
+  padding: 0.9rem;
+}
+
+.finalPhaseCard {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  padding: 0.9rem;
+}
+
+.finalPhaseSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.finalPhaseSummary div {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background: var(--color-page);
+  padding: 0.65rem;
+}
+
+.finalPhaseSummary span {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.finalPhaseSummary strong {
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.bracketList {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.bracketSection {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-page);
+  padding: 0.85rem;
+}
+
+.bracketHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bracketHeader h3,
+.bracketRound h4 {
+  margin: 0;
+}
+
+.bracketHeader span {
+  border-radius: 999px;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 0.3rem 0.55rem;
+}
+
+.bracketRound {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.bracketRound h4 {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.bracketMatches {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.bracketMatch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background: var(--color-surface);
+  padding: 0.7rem;
+}
+
+.bracketMatch div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.bracketMatch span {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.inlineLink {
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.inlineLink:hover {
+  color: var(--color-primary-hover);
+}
+
+.configGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.configGrid div {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background: var(--color-surface);
+  padding: 0.65rem;
+}
+
+.configGrid dt {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.configGrid dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 900;
 }
 
 .dashboardGrid {
@@ -198,6 +424,37 @@
   font-weight: 700;
   padding: 0.35rem 0.65rem;
   white-space: nowrap;
+}
+
+.phaseBadge {
+  width: max-content;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  font-weight: 900;
+  padding: 0.35rem 0.65rem;
+  white-space: nowrap;
+}
+
+.phaseSetup {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.phaseRegularSeason {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.phaseKnockout {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.phaseCompleted {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
 }
 
 .sectionTitle {
@@ -290,19 +547,29 @@
 @media (max-width: 900px) {
   .layout,
   .grid,
-  .dashboardGrid {
+  .dashboardGrid,
+  .configGrid,
+  .finalPhaseSummary {
     grid-template-columns: 1fr;
   }
 
   .header,
   .detailHeader,
-  .teamItem {
+  .teamItem,
+  .bracketHeader,
+  .bracketMatch {
     align-items: stretch;
     flex-direction: column;
   }
 
   .teamItem span {
     text-align: left;
+  }
+}
+
+@media (min-width: 901px) {
+  .bracketList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

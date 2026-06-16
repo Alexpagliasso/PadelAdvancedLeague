@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase/client';
-import type { Database, SeasonStatus, TournamentStatus } from '@/lib/supabase/types';
+import type {
+  Database,
+  SeasonStatus,
+  TournamentFormat,
+  TournamentStatus
+} from '@/lib/supabase/types';
 
 export type Tournament = Database['public']['Tables']['tournaments']['Row'];
 export type Season = Database['public']['Tables']['seasons']['Row'];
@@ -14,11 +19,25 @@ export type CreateTournamentInput = {
   slug: string;
   description: string | null;
   is_public: boolean;
+  expected_teams_count: number;
+  format: TournamentFormat;
+  allow_byes: boolean;
+  playoff_teams_count: number | null;
+  playout_teams_count: number | null;
 };
 
 export type UpdateTournamentInput = CreateTournamentInput & {
   id: string;
   status: TournamentStatus;
+};
+
+export type UpdateTournamentCompetitionSettingsInput = {
+  id: string;
+  expected_teams_count: number;
+  format: TournamentFormat;
+  allow_byes: boolean;
+  playoff_teams_count: number | null;
+  playout_teams_count: number | null;
 };
 
 export type CreateSeasonInput = {
@@ -120,6 +139,25 @@ export async function createTournament(input: CreateTournamentInput): Promise<To
 }
 
 export async function updateTournament(input: UpdateTournamentInput): Promise<Tournament> {
+  const { id, ...values } = input;
+
+  const { data, error } = await supabase
+    .from('tournaments')
+    .update(values)
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateTournamentCompetitionSettings(
+  input: UpdateTournamentCompetitionSettingsInput
+): Promise<Tournament> {
   const { id, ...values } = input;
 
   const { data, error } = await supabase
