@@ -1,7 +1,15 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import type { IconType } from 'react-icons';
-import { FaCalendarDays, FaRankingStar, FaUsers } from 'react-icons/fa6';
-import { MdCancel, MdCheckCircle, MdEventBusy, MdSchedule } from 'react-icons/md';
+import { FaCalendarDays, FaRankingStar, FaTrophy, FaUsers } from 'react-icons/fa6';
+import {
+  MdAdminPanelSettings,
+  MdCancel,
+  MdCheckCircle,
+  MdDarkMode,
+  MdEventBusy,
+  MdLightMode,
+  MdSchedule
+} from 'react-icons/md';
 import { Link, useParams } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
@@ -26,6 +34,7 @@ import { calculateStandings } from '@/features/standings/lib/standingsEngine';
 import styles from '@/features/public/routes/PublicTournamentRoute.module.scss';
 
 type PublicTab = 'standings' | 'teams' | 'calendar' | 'results';
+type PublicTheme = 'light' | 'dark';
 
 const publicTabs: { icon: IconType; id: PublicTab; label: string }[] = [
   { icon: FaRankingStar, id: 'standings', label: 'Classifica' },
@@ -46,6 +55,28 @@ function cx(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
+function getInitialPublicTheme(): PublicTheme {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
+
+  return window.localStorage.getItem('pad-public-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function usePublicTheme() {
+  const [theme, setTheme] = useState<PublicTheme>(getInitialPublicTheme);
+
+  useEffect(() => {
+    window.localStorage.setItem('pad-public-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
+  };
+
+  return { theme, toggleTheme };
+}
+
 function getTeamName(teams: PublicTeam[], teamId: string): string {
   return teams.find((team) => team.id === teamId)?.name ?? 'Squadra';
 }
@@ -53,14 +84,6 @@ function getTeamName(teams: PublicTeam[], teamId: string): string {
 function getOpponentName(match: MatchWithSets, selectedTeamId: string, teams: PublicTeam[]): string {
   const opponentId = match.home_team_id === selectedTeamId ? match.away_team_id : match.home_team_id;
   return getTeamName(teams, opponentId);
-}
-
-function getMatchResult(match: MatchWithSets, teams: PublicTeam[]): string {
-  if (!isMatchPlayed(match)) {
-    return 'Da disputare';
-  }
-
-  return `${getTeamName(teams, match.home_team_id)} ${match.home_sets_won.toString()} - ${match.away_sets_won.toString()} ${getTeamName(teams, match.away_team_id)}`;
 }
 
 function getPlayerLabel(player: PublicPlayer): string {
@@ -87,11 +110,31 @@ function getCompactResult(match: MatchWithSets): string {
     return 'Da disputare';
   }
 
-  return `${match.home_sets_won.toString()}-${match.away_sets_won.toString()}`;
+  return `${match.home_sets_won.toString()} - ${match.away_sets_won.toString()}`;
 }
 
-function getTeamOutcome(match: MatchWithSets, teamId: string): 'win' | 'loss' | null {
+function getWinnerTeamId(match: MatchWithSets): string | null {
   if (!isMatchPlayed(match)) {
+    return null;
+  }
+
+  if (match.home_sets_won > match.away_sets_won) {
+    return match.home_team_id;
+  }
+
+  if (match.away_sets_won > match.home_sets_won) {
+    return match.away_team_id;
+  }
+
+  return null;
+}
+
+function getTeamMatchOutcome(teamId: string, match: MatchWithSets): 'win' | 'loss' | null {
+  if (!isMatchPlayed(match)) {
+    return null;
+  }
+
+  if (match.home_team_id !== teamId && match.away_team_id !== teamId) {
     return null;
   }
 
@@ -100,6 +143,25 @@ function getTeamOutcome(match: MatchWithSets, teamId: string): 'win' | 'loss' | 
   const selectedTeamWon = selectedTeamIsHome ? homeWon : !homeWon;
 
   return selectedTeamWon ? 'win' : 'loss';
+}
+
+function getMatchSortDate(match: MatchWithSets): string {
+  return match.scheduled_at ?? match.updated_at;
+}
+
+function getLastPlayedMatchForTeam(teamId: string, matches: MatchWithSets[]): MatchWithSets | null {
+  const playedMatches = matches.filter(
+    (match) =>
+      isMatchPlayed(match) && (match.home_team_id === teamId || match.away_team_id === teamId)
+  );
+
+  if (playedMatches.length === 0) {
+    return null;
+  }
+
+  return [...playedMatches].sort((first, second) =>
+    getMatchSortDate(second).localeCompare(getMatchSortDate(first))
+  )[0] ?? null;
 }
 
 function getStatusLabel(status: MatchWithSets['status']): string {
@@ -132,18 +194,30 @@ function getPodiumIcon(position: number): IconType | null {
   return null;
 }
 
-function getSetsLabel(match: MatchWithSets): string {
+function getPodiumClass(position: number): string | false | undefined {
+  if (position === 1) {
+    return styles.positionGold;
+  }
+
+  if (position === 2) {
+    return styles.positionSilver;
+  }
+
+  if (position === 3) {
+    return styles.positionBronze;
+  }
+
+  return false;
+}
+
+function getCompactSetLabels(match: MatchWithSets): string[] {
   if (match.sets.length === 0) {
-    return '';
+    return [];
   }
 
   return [...match.sets]
     .sort((first, second) => first.set_number - second.set_number)
-    .map(
-      (set) =>
-        `Set ${set.set_number.toString()}: ${set.home_games.toString()}-${set.away_games.toString()}`
-    )
-    .join(' · ');
+    .map((set) => `${set.home_games.toString()}-${set.away_games.toString()}`);
 }
 
 function sortCalendarMatches(matches: MatchWithSets[]): MatchWithSets[] {
@@ -288,22 +362,55 @@ function PublicTournamentSelectionPage({
   onSelectTournament: (slug: string | null) => void;
   tournaments: PublicTournament[];
 }) {
+  const { theme, toggleTheme } = usePublicTheme();
+
   return (
-    <main className={styles.page}>
+    <main
+      className={cx(
+        styles.page,
+        theme === 'dark' ? styles.publicThemeDark : styles.publicThemeLight
+      )}
+    >
       <header className={styles.hero}>
         <nav className={styles.nav}>
+          <ThemeToggleButton onToggle={toggleTheme} theme={theme} />
           <Link className={styles.adminLink} to={appPaths.auth}>
-            Accesso admin
+            <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
+            <span className={styles.adminLinkText}>Admin</span>
           </Link>
         </nav>
         <div className={styles.heroContent}>
           <img className={styles.heroLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
-          <p className={styles.eyebrow}>Tornei attivi</p>
-          <TournamentSelect
-            onChange={onSelectTournament}
-            selectedSlug={null}
-            tournaments={tournaments}
-          />
+          <p className={styles.brandTagline}>Padel And Drink</p>
+          <h1>Competizioni</h1>
+          <div className={styles.selectionSelect}>
+            <TournamentSelect
+              onChange={onSelectTournament}
+              selectedSlug={null}
+              tournaments={tournaments}
+            />
+          </div>
+          <div className={styles.competitionCards}>
+            {tournaments.map((tournament) => (
+              <button
+                className={styles.competitionCard}
+                key={tournament.id}
+                onClick={() => {
+                  onSelectTournament(tournament.slug);
+                }}
+                type="button"
+              >
+                <span className={styles.competitionIcon}>
+                  <FaTrophy aria-hidden="true" />
+                </span>
+                <span className={styles.competitionBody}>
+                  <strong>{tournament.name}</strong>
+                  {tournament.description ? <small>{tournament.description}</small> : null}
+                  <em>Attivo</em>
+                </span>
+              </button>
+            ))}
+          </div>
           <p className={styles.heroHint}>Scegli un torneo per vedere classifica, squadre e calendario.</p>
         </div>
       </header>
@@ -349,6 +456,7 @@ export function PublicTournamentView({
   header?: ReactNode;
   selector?: ReactNode;
 }) {
+  const { theme, toggleTheme } = usePublicTheme();
   const [activeTab, setActiveTab] = useState<PublicTab>('standings');
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
 
@@ -364,21 +472,49 @@ export function PublicTournamentView({
     () => sortResultMatches(data.matches),
     [data.matches]
   );
+  const lastOutcomesByTeamId = useMemo(() => {
+    const outcomes = new Map<string, 'win' | 'loss'>();
+
+    for (const team of data.teams) {
+      const lastMatch = getLastPlayedMatchForTeam(team.id, data.matches);
+      const outcome = lastMatch ? getTeamMatchOutcome(team.id, lastMatch) : null;
+
+      if (outcome) {
+        outcomes.set(team.id, outcome);
+      }
+    }
+
+    return outcomes;
+  }, [data.matches, data.teams]);
+
   return (
-    <main className={styles.page}>
+    <main
+      className={cx(
+        styles.page,
+        header
+          ? styles.publicThemeLight
+          : theme === 'dark'
+            ? styles.publicThemeDark
+            : styles.publicThemeLight
+      )}
+    >
       {header ?? (
         <header className={styles.hero}>
           <nav className={styles.nav}>
+            <ThemeToggleButton onToggle={toggleTheme} theme={theme} />
             <Link className={styles.adminLink} to={appPaths.auth}>
-            Accesso admin
+              <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
+              <span className={styles.adminLinkText}>Admin</span>
             </Link>
           </nav>
           <div className={styles.heroContent}>
             <img className={styles.heroLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
-            <p className={styles.eyebrow}>Torneo attivo</p>
-            {selector}
-            <h1>{data.tournament.name}</h1>
-            {data.tournament.description ? <p>{data.tournament.description}</p> : null}
+            <p className={styles.brandTagline}>Padel And Drink</p>
+            <div className={styles.tournamentHeroCard}>
+              <p className={styles.eyebrow}>Torneo attivo</p>
+              {selector ?? <h1>{data.tournament.name}</h1>}
+              {data.tournament.description ? <p>{data.tournament.description}</p> : null}
+            </div>
           </div>
         </header>
       )}
@@ -409,7 +545,13 @@ export function PublicTournamentView({
             <div className={styles.standingsList}>
               {standings.map((row) => (
                 <article className={styles.standingCard} key={row.teamId}>
-                  <span className={cx(styles.position, row.position <= 3 && styles.positionPodium)}>
+                  <span
+                    className={cx(
+                      styles.position,
+                      row.position <= 3 && styles.positionPodium,
+                      getPodiumClass(row.position)
+                    )}
+                  >
                     {(() => {
                       const PodiumIcon = getPodiumIcon(row.position);
 
@@ -420,7 +562,13 @@ export function PublicTournamentView({
                       );
                     })()}
                   </span>
-                  <strong>{row.teamName}</strong>
+                  <strong className={styles.teamNameWithOutcome}>
+                    <span>{row.teamName}</span>
+                    <OutcomeIcon
+                      outcome={lastOutcomesByTeamId.get(row.teamId) ?? null}
+                      variant="last"
+                    />
+                  </strong>
                   <span>PG {row.played}</span>
                   <span>V {row.wins}</span>
                   <span>P {row.losses}</span>
@@ -456,7 +604,13 @@ export function PublicTournamentView({
                   {standings.map((row) => (
                     <tr key={row.teamId}>
                       <td>
-                        <span className={cx(styles.tablePosition, row.position <= 3 && styles.positionPodium)}>
+                        <span
+                          className={cx(
+                            styles.tablePosition,
+                            row.position <= 3 && styles.positionPodium,
+                            getPodiumClass(row.position)
+                          )}
+                        >
                           {(() => {
                             const PodiumIcon = getPodiumIcon(row.position);
 
@@ -471,7 +625,15 @@ export function PublicTournamentView({
                           })()}
                         </span>
                       </td>
-                      <td>{row.teamName}</td>
+                      <td>
+                        <span className={styles.teamNameWithOutcome}>
+                          <span>{row.teamName}</span>
+                          <OutcomeIcon
+                            outcome={lastOutcomesByTeamId.get(row.teamId) ?? null}
+                            variant="last"
+                          />
+                        </span>
+                      </td>
                       <td>{row.played}</td>
                       <td>{row.wins}</td>
                       <td>{row.losses}</td>
@@ -538,6 +700,29 @@ export function PublicTournamentView({
         ) : null}
       </section>
     </main>
+  );
+}
+
+function ThemeToggleButton({
+  onToggle,
+  theme
+}: {
+  onToggle: () => void;
+  theme: PublicTheme;
+}) {
+  const Icon = theme === 'dark' ? MdLightMode : MdDarkMode;
+  const label = theme === 'dark' ? 'Light' : 'Dark';
+
+  return (
+    <button
+      aria-label={`Passa al tema ${theme === 'dark' ? 'chiaro' : 'scuro'}`}
+      className={styles.themeToggle}
+      onClick={onToggle}
+      type="button"
+    >
+      <Icon aria-hidden="true" className={styles.themeToggleIcon} />
+      <span>{label}</span>
+    </button>
   );
 }
 
@@ -611,7 +796,7 @@ function TeamAccordionItem({
           {sortedTeamMatches.length === 0 ? <p className={styles.muted}>Nessuna partita per questa squadra.</p> : null}
           <div className={styles.matchList}>
             {sortedTeamMatches.map((match) => {
-              const outcome = getTeamOutcome(match, team.id);
+              const outcome = getTeamMatchOutcome(team.id, match);
 
               return (
                 <article
@@ -638,17 +823,8 @@ function TeamAccordionItem({
                     <div>
                       <dt>Risultato</dt>
                       <dd className={styles.resultWithOutcome}>
-                        {getCompactResult(match)}
-                        {outcome ? (
-                          <span
-                            className={cx(
-                              styles.outcomeBadge,
-                              outcome === 'win' ? styles.outcomeWin : styles.outcomeLoss
-                            )}
-                          >
-                            {outcome === 'win' ? 'V' : 'P'}
-                          </span>
-                        ) : null}
+                        <OutcomeIcon outcome={outcome} variant="match" />
+                        <span>{getCompactResult(match)}</span>
                       </dd>
                     </div>
                   </dl>
@@ -659,6 +835,38 @@ function TeamAccordionItem({
         </div>
       ) : null}
     </article>
+  );
+}
+
+function OutcomeIcon({
+  outcome,
+  variant
+}: {
+  outcome: 'win' | 'loss' | null;
+  variant: 'last' | 'match';
+}) {
+  if (!outcome) {
+    return null;
+  }
+
+  const isWin = outcome === 'win';
+  const label =
+    variant === 'last'
+      ? `Ultima partita: ${isWin ? 'vittoria' : 'sconfitta'}`
+      : isWin
+        ? 'Vittoria'
+        : 'Sconfitta';
+
+  const Icon = isWin ? MdCheckCircle : MdCancel;
+
+  return (
+    <span
+      aria-label={label}
+      className={cx(styles.outcomeIconWrap, isWin ? styles.outcomeWin : styles.outcomeLoss)}
+      title={label}
+    >
+      <Icon aria-hidden="true" className={styles.outcomeIcon} />
+    </span>
   );
 }
 
@@ -677,25 +885,65 @@ function MatchList({
 
   return (
     <div className={styles.matchList}>
-      {matches.map((match) => (
-        <article
-          className={cx(styles.matchCard, styles[`matchCard_${match.status}`])}
-          key={match.id}
-        >
-          <div className={styles.matchTopline}>
-            <strong>
-              {getTeamName(teams, match.home_team_id)} vs {getTeamName(teams, match.away_team_id)}
-            </strong>
-            <MatchStatusBadge status={match.status} />
-          </div>
-          <span>
-            {formatMatchDate(match.scheduled_at)} · {formatMatchTime(match.scheduled_at)}
-          </span>
-          <span>{match.venue ?? 'Luogo da definire'}</span>
-          <strong>{getMatchResult(match, teams)}</strong>
-          {getSetsLabel(match) ? <small>{getSetsLabel(match)}</small> : null}
-        </article>
-      ))}
+      {matches.map((match) => {
+        const winnerTeamId = getWinnerTeamId(match);
+        const compactSets = getCompactSetLabels(match);
+
+        return (
+          <article
+            className={cx(styles.matchCard, styles[`matchCard_${match.status}`])}
+            key={match.id}
+          >
+            <div className={styles.matchSchedule}>
+              <span>{formatMatchDate(match.scheduled_at)}</span>
+              <strong>{formatMatchTime(match.scheduled_at)}</strong>
+              <small>{match.venue ?? 'Luogo da definire'}</small>
+            </div>
+            <div className={styles.matchMain}>
+              <div className={styles.matchTopline}>
+                <strong className={styles.matchTeams}>
+                  <span className={cx(winnerTeamId === match.home_team_id && styles.winnerTeam)}>
+                    {getTeamName(teams, match.home_team_id)}
+                    {winnerTeamId === match.home_team_id ? (
+                      <MdCheckCircle
+                        aria-label="Squadra vincente"
+                        className={styles.winnerIcon}
+                        title="Squadra vincente"
+                      />
+                    ) : null}
+                  </span>
+                  <span className={styles.versus}>vs</span>
+                  <span className={cx(winnerTeamId === match.away_team_id && styles.winnerTeam)}>
+                    {getTeamName(teams, match.away_team_id)}
+                    {winnerTeamId === match.away_team_id ? (
+                      <MdCheckCircle
+                        aria-label="Squadra vincente"
+                        className={styles.winnerIcon}
+                        title="Squadra vincente"
+                      />
+                    ) : null}
+                  </span>
+                </strong>
+                <MatchStatusBadge status={match.status} />
+              </div>
+              {isMatchPlayed(match) ? (
+                <div className={styles.scoreSummary}>
+                  <strong className={styles.scorePill}>{getCompactResult(match)}</strong>
+                  {compactSets.length > 0 ? (
+                    <span className={styles.setChips} aria-label="Dettaglio set">
+                      {compactSets.map((setLabel) => (
+                        <small className={styles.setChip} key={setLabel}>
+                          {setLabel}
+                        </small>
+                      ))}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -706,7 +954,7 @@ function MatchStatusBadge({ status }: { status: MatchWithSets['status'] }) {
   return (
     <span className={cx(styles.badge, styles[`badge_${status}`])}>
       <StatusIcon aria-hidden="true" className={styles.badgeIcon} />
-      <span>{getStatusLabel(status)}</span>
+      <span className={styles.badgeLabel}>{getStatusLabel(status)}</span>
     </span>
   );
 }

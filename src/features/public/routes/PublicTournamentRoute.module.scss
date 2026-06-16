@@ -1,15 +1,37 @@
 .page {
+  --pad-public-bg: #f4f8fc;
+  --pad-public-surface: #ffffff;
+  --pad-public-card: #ffffff;
+  --pad-public-text: #0f172a;
+  --pad-public-muted: #64748b;
+  --pad-public-border: #d8e2ee;
+  --pad-public-navy: #061a4d;
+  --pad-public-navy-soft: #e8eef9;
+  --pad-public-blue: #159bff;
+  --pad-public-blue-soft: #eaf7ff;
+  --pad-public-blue-border: #9ddcff;
+  --pad-public-orange: #ff7a00;
+  --pad-public-orange-soft: #ffe8d1;
+  --pad-public-orange-border: #ffb36b;
+
   min-height: 100dvh;
-  background: var(--color-page);
-  color: var(--color-text);
+  background: var(--pad-public-bg);
+  color: var(--pad-public-text);
+}
+
+.publicThemeLight {
+  color-scheme: light;
 }
 
 .hero {
   display: grid;
   position: relative;
   gap: 1rem;
-  background: var(--color-primary);
-  color: var(--color-surface);
+  border-bottom: 1px solid var(--pad-public-border);
+  background:
+    radial-gradient(circle at top, rgb(21 155 255 / 16%), transparent 18rem),
+    linear-gradient(180deg, var(--pad-public-blue-soft), var(--pad-public-surface));
+  color: var(--pad-public-navy);
   padding: 1rem 1rem 1.8rem;
 }
 
@@ -24,23 +46,44 @@
 }
 
 .nav strong {
-  color: var(--pad-surface);
+  color: var(--pad-public-navy);
 }
 
 .adminLink {
-  border: 1px solid rgb(255 255 255 / 70%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid var(--pad-public-blue-border);
   border-radius: 0.5rem;
-  color: var(--pad-surface);
+  background: var(--pad-public-surface);
+  color: var(--pad-public-navy);
   padding: 0.55rem 0.75rem;
   text-decoration: none;
 }
 
 .adminLink:hover {
-  border-color: var(--pad-blue-soft);
-  background: rgb(56 189 248 / 14%);
-  color: var(--pad-surface);
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
   text-decoration: underline;
   text-underline-offset: 0.2rem;
+}
+
+.adminIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
+
+.themeToggle {
+  display: none;
+}
+
+.themeToggleIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .heroContent {
@@ -55,32 +98,40 @@
 }
 
 .heroLogo {
-  width: clamp(5.5rem, 28vw, 7rem);
+  width: clamp(5rem, 18vw, 6rem);
   height: auto;
   margin-bottom: 0.45rem;
   object-fit: contain;
 }
 
 .heroContent h1 {
-  color: var(--pad-surface);
+  color: var(--pad-public-navy);
   margin: 0;
-  font-size: clamp(1.65rem, 7vw, 2.6rem);
+  font-size: clamp(1.5rem, 5vw, 2rem);
   line-height: 1.08;
 }
 
 .heroContent p {
   max-width: 42rem;
   margin: 0;
-  color: rgb(255 255 255 / 86%);
+  color: var(--pad-public-muted);
   line-height: 1.55;
 }
 
+.brandTagline {
+  display: none;
+}
+
+.tournamentHeroCard {
+  display: contents;
+}
+
 .heroHint {
-  color: var(--pad-blue-soft);
+  color: var(--pad-public-muted);
 }
 
 .eyebrow {
-  color: var(--pad-blue-soft);
+  color: var(--pad-public-blue);
   font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -91,7 +142,7 @@
   gap: 0.35rem;
   width: 100%;
   max-width: 28rem;
-  color: var(--pad-blue-soft);
+  color: var(--pad-public-navy);
   font-size: 0.85rem;
   font-weight: 800;
   text-align: left;
@@ -100,13 +151,21 @@
 
 .tournamentSelect select {
   width: 100%;
-  border: 1px solid var(--pad-blue-border);
+  border: 1px solid var(--pad-public-blue-border);
   border-radius: 0.5rem;
-  background: var(--pad-surface);
-  color: var(--pad-navy);
+  background: var(--pad-public-surface);
+  color: var(--pad-public-navy);
   font-weight: 800;
   padding: 0.85rem 0.95rem;
   text-transform: none;
+}
+
+.competitionCards {
+  display: none;
+}
+
+.selectionSelect {
+  display: contents;
 }
 
 .content {
@@ -121,9 +180,9 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(max-content, 1fr));
   overflow-x: auto;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--pad-public-border);
   border-radius: 0.5rem;
-  background: var(--color-surface);
+  background: var(--pad-public-surface);
 }
 
 .tabButton {
@@ -133,7 +192,7 @@
   gap: 0.45rem;
   border: 0;
   background: transparent;
-  color: var(--color-muted);
+  color: var(--pad-public-muted);
   cursor: pointer;
   font-weight: 700;
   padding: 0.8rem 0.75rem;
@@ -141,19 +200,20 @@
 }
 
 .tabButtonActive {
-  background: var(--color-primary);
-  color: var(--color-surface);
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+  box-shadow: inset 0 -3px 0 var(--pad-public-orange);
 }
 
 .tabButton:hover {
-  background: var(--pad-blue-soft);
-  color: var(--color-primary);
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
   text-decoration: none;
 }
 
 .tabButtonActive:hover {
-  background: var(--color-primary-hover);
-  color: var(--color-surface);
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
 }
 
 .section {
@@ -175,7 +235,7 @@
 
 .sectionHeader span,
 .muted {
-  color: var(--color-muted);
+  color: var(--pad-public-muted);
   font-size: 0.875rem;
 }
 
@@ -189,9 +249,9 @@
   grid-template-columns: auto minmax(0, 1fr) repeat(2, auto);
   gap: 0.45rem 0.7rem;
   align-items: center;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--pad-public-border);
   border-radius: 0.5rem;
-  background: var(--color-surface);
+  background: var(--pad-public-surface);
   padding: 0.8rem;
 }
 
@@ -204,21 +264,50 @@
   min-width: 0;
 }
 
+.teamNameWithOutcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.teamNameWithOutcome span:first-child {
+  min-width: 0;
+}
+
 .position {
   display: grid;
   width: 1.8rem;
   height: 1.8rem;
   border-radius: 999px;
-  background: var(--pad-blue-soft);
-  color: var(--color-primary);
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
   font-weight: 800;
   place-items: center;
 }
 
 .positionPodium {
-  border: 1px solid var(--pad-orange-border);
-  background: var(--pad-orange-soft);
-  color: var(--pad-navy);
+  border: 1px solid var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+}
+
+.positionGold {
+  border-color: #b45309;
+  background: #f59e0b;
+  color: #111827;
+}
+
+.positionSilver {
+  border-color: #64748b;
+  background: #94a3b8;
+  color: #0f172a;
+}
+
+.positionBronze {
+  border-color: #92400e;
+  background: #b45309;
+  color: #ffffff;
 }
 
 .positionIcon,
@@ -247,14 +336,14 @@
 
 .accordionItem {
   overflow: hidden;
-  border: 1px solid var(--pad-blue-border);
+  border: 1px solid #d8e2ee;
   border-radius: 0.5rem;
-  background: var(--color-surface);
+  background: var(--pad-public-surface);
 }
 
 .accordionItemOpen {
-  border-color: var(--pad-orange-border);
-  box-shadow: inset 4px 0 0 var(--pad-orange);
+  border-color: var(--pad-public-orange-border);
+  box-shadow: inset 4px 0 0 var(--pad-public-orange);
 }
 
 .accordionHeader {
@@ -264,25 +353,25 @@
   gap: 0.75rem;
   width: 100%;
   border: 0;
-  background: var(--pad-blue-soft);
-  color: var(--pad-navy);
+  background: #ffffff;
+  color: #061a4d;
   cursor: pointer;
   padding: 0.8rem;
   text-align: left;
 }
 
 .accordionHeader:hover {
-  background: var(--pad-blue-soft-strong);
-  border-color: var(--pad-blue-border);
+  background: #eaf7ff;
+  border-color: #d8e2ee;
 }
 
 .accordionItemOpen .accordionHeader {
-  background: var(--pad-orange-soft);
-  color: var(--pad-navy);
+  background: #ffe8d1;
+  color: #061a4d;
 }
 
 .accordionItemOpen .accordionHeader:hover {
-  background: var(--pad-orange-soft-strong);
+  background: #ffd8b0;
 }
 
 .teamIdentity {
@@ -310,9 +399,9 @@
 .avatarFallback {
   width: 1.7rem;
   height: 1.7rem;
-  border: 1px solid var(--pad-orange-border);
+  border: 1px solid var(--pad-public-orange-border);
   border-radius: 50%;
-  background: var(--pad-blue-soft);
+  background: var(--pad-public-blue-soft);
   flex: 0 0 auto;
 }
 
@@ -332,7 +421,7 @@
   width: 0.48rem;
   height: 0.48rem;
   border-radius: 999px;
-  background: var(--pad-navy);
+  background: var(--pad-public-navy);
   content: '';
   transform: translateX(-50%);
 }
@@ -344,7 +433,7 @@
   left: 0.42rem;
   height: 0.48rem;
   border-radius: 999px 999px 0.25rem 0.25rem;
-  background: var(--pad-navy);
+  background: var(--pad-public-navy);
   content: '';
 }
 
@@ -364,7 +453,7 @@
 }
 
 .teamStats small {
-  color: var(--pad-navy);
+  color: var(--pad-public-navy);
   font-size: 0.75rem;
 }
 
@@ -395,25 +484,53 @@
 .matchCard {
   display: grid;
   gap: 0.55rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--pad-public-border);
   border-radius: 0.5rem;
-  background: var(--color-surface);
+  background: var(--pad-public-surface);
   padding: 0.85rem;
 }
 
+.matchSchedule {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  color: var(--pad-public-muted);
+  font-size: 0.86rem;
+}
+
+.matchMain {
+  display: grid;
+  gap: 0.55rem;
+  order: 1;
+}
+
+.matchSchedule {
+  order: 2;
+}
+
+.matchSchedule strong {
+  color: var(--pad-public-text);
+}
+
+.matchSchedule small {
+  color: var(--pad-public-muted);
+  font-size: 0.86rem;
+}
+
 .matchCard_scheduled {
-  border-color: var(--pad-border);
-  background: var(--pad-surface);
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-surface);
 }
 
 .matchCard_played {
-  border-color: var(--pad-blue-border);
-  background: var(--pad-blue-soft);
+  border-color: var(--pad-public-blue);
+  background: var(--pad-public-blue-soft);
 }
 
 .matchCard_postponed {
-  border-color: var(--pad-orange-border);
-  background: var(--pad-orange-soft);
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
 }
 
 .matchCard_cancelled {
@@ -423,7 +540,7 @@
 
 .matchCard span,
 .matchCard small {
-  color: var(--color-muted);
+  color: var(--pad-public-muted);
 }
 
 .matchTopline {
@@ -446,7 +563,7 @@
 }
 
 .matchMeta dt {
-  color: var(--color-muted);
+  color: var(--pad-public-muted);
   font-size: 0.75rem;
 }
 
@@ -461,67 +578,157 @@
   gap: 0.4rem;
 }
 
-.outcomeBadge {
-  display: inline-grid;
-  min-width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 900;
+.outcomeIconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
-  place-items: center;
 }
 
 .outcomeWin {
-  border: 1px solid #86efac;
-  background: #dcfce7;
-  color: #166534;
+  color: #16a34a;
 }
 
 .outcomeLoss {
-  border: 1px solid #fca5a5;
-  background: #fee2e2;
-  color: #991b1b;
+  color: #dc2626;
+}
+
+.outcomeIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+}
+
+.matchTeams {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.versus {
+  color: var(--pad-public-muted);
+  font-weight: 700;
+}
+
+.winnerTeam {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--pad-public-text);
+  font-weight: 900;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.winnerIcon {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #16a34a;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.scoreSummary {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 0.15rem 0;
+  text-align: center;
+}
+
+.scorePill {
+  min-width: 5.5rem;
+  border: 1px solid #9ddcff;
+  border-radius: 999px;
+  background: #eaf7ff;
+  color: #061a4d;
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 0.35rem 1rem rgb(6 26 77 / 10%);
+}
+
+.setChips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.setChip {
+  border: 1px solid #d8e2ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.28rem 0.55rem;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
   border-radius: 999px;
   flex: 0 0 auto;
   font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.25rem 0.5rem;
+  padding: 0.18rem 0.42rem;
   text-transform: capitalize;
 }
 
+.badgeIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.badgeLabel {
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.badge span,
+.badgeIcon {
+  color: inherit;
+}
+
+.matchCard .badge span,
+.matchCard .badgeIcon {
+  color: inherit;
+}
+
 .badge_scheduled {
-  background: var(--pad-blue-soft);
-  color: var(--pad-navy);
+  background: #ff7a00;
+  color: #ffffff;
 }
 
 .badge_played {
-  background: var(--pad-blue-soft-strong);
-  color: var(--pad-navy);
+  background: #061a4d;
+  color: #ffffff;
 }
 
 .badge_postponed {
-  background: var(--pad-orange-soft);
-  color: var(--pad-navy);
+  background: #ffe8d1;
+  color: #061a4d;
 }
 
 .badge_cancelled {
-  background: #e2e8f0;
-  color: var(--pad-text);
+  background: #ef4444;
+  color: #ffffff;
 }
 
 .tableWrap {
   display: none;
   overflow-x: auto;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--pad-public-border);
   border-radius: 0.5rem;
-  background: var(--color-surface);
+  background: var(--pad-public-surface);
 }
 
 .table {
@@ -533,13 +740,13 @@
 
 .table th,
 .table td {
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--pad-public-border);
   padding: 0.75rem;
   text-align: left;
 }
 
 .table th {
-  color: var(--color-muted);
+  color: var(--pad-public-muted);
 }
 
 .emptyState {
@@ -557,18 +764,18 @@
 }
 
 .error {
-  color: var(--color-danger-text);
+  color: #b91c1c;
   padding: 1rem;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 768px) {
   .hero {
     padding: 1.25rem 1.5rem 2.5rem;
   }
 
   .heroLogo {
-    width: clamp(7.5rem, 12vw, 10rem);
-    margin-bottom: 0.7rem;
+    width: clamp(5rem, 8vw, 6rem);
+    margin-bottom: 0.5rem;
   }
 
   .tournamentSelect {
@@ -585,6 +792,113 @@
 
   .tableWrap {
     display: block;
+  }
+
+  .matchList {
+    gap: 1rem;
+  }
+
+  .matchCard {
+    grid-template-columns: minmax(9rem, 0.85fr) minmax(22rem, 2.15fr);
+    align-items: center;
+    gap: 1.25rem;
+    border-color: #d8e2ee;
+    border-radius: 1.25rem;
+    background: #ffffff;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 0.8rem 2rem rgb(6 26 77 / 8%);
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .matchMain,
+  .matchSchedule {
+    order: initial;
+  }
+
+  .matchCard:hover {
+    border-color: #9ddcff;
+    box-shadow: 0 1rem 2.4rem rgb(6 26 77 / 12%);
+    transform: translateY(-1px);
+  }
+
+  .matchCard_scheduled {
+    border-color: #ffb36b;
+    background: #ffffff;
+  }
+
+  .matchCard_played {
+    border-color: #9ddcff;
+    background: #ffffff;
+  }
+
+  .matchCard_postponed {
+    border-color: #ffb36b;
+    background: #ffffff;
+  }
+
+  .matchCard_cancelled {
+    border-color: #cbd5e1;
+    background: #ffffff;
+  }
+
+  .matchSchedule {
+    display: grid;
+    gap: 0.18rem;
+    align-content: center;
+    font-size: 0.86rem;
+  }
+
+  .matchSchedule strong {
+    color: #061a4d;
+    font-size: 1.05rem;
+  }
+
+  .matchSchedule small {
+    max-width: 13rem;
+    color: #64748b;
+  }
+
+  .matchMain {
+    justify-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+  }
+
+  .matchTopline {
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .matchTeams {
+    justify-content: flex-start;
+    gap: 0.65rem;
+    color: #0f172a;
+    font-size: 1rem;
+  }
+
+  .versus {
+    color: #64748b;
+    font-size: 0.86rem;
+    text-transform: uppercase;
+  }
+
+  .scorePill {
+    min-width: 7.5rem;
+    font-size: 1.65rem;
+    padding: 0.58rem 1.3rem;
+  }
+
+  .setChips {
+    gap: 0.3rem;
+  }
+
+  .setChip {
+    font-size: 0.72rem;
+    padding: 0.24rem 0.5rem;
   }
 
   .playerIdentity img,
@@ -617,4 +931,636 @@
     grid-template-columns: repeat(3, max-content);
     text-align: left;
   }
+}
+
+@media (max-width: 767px) {
+  .publicThemeDark {
+    --pad-public-bg: #061a4d;
+    --pad-public-surface: #0b245f;
+    --pad-public-card: #102b66;
+    --pad-public-text: #ffffff;
+    --pad-public-muted: #d7f0ff;
+    --pad-public-border: #234a8f;
+    --pad-public-navy-soft: #102b66;
+    --pad-public-blue-soft: #d7f0ff;
+    --pad-public-orange-soft: #ffe8d1;
+  }
+
+  .publicThemeDark .adminLink,
+  .publicThemeDark .themeToggle {
+    border-color: var(--pad-public-border);
+    background: var(--pad-public-card);
+    color: #ffffff;
+  }
+
+  .publicThemeDark .adminLink:hover,
+  .publicThemeDark .themeToggle:hover {
+    border-color: var(--pad-public-orange-border);
+    background: #0b245f;
+    color: #ffffff;
+  }
+
+  .publicThemeDark .tournamentSelect,
+  .publicThemeDark .tournamentHeroCard .tournamentSelect span {
+    color: #d7f0ff;
+  }
+
+  .publicThemeDark .competitionCard {
+    border-color: var(--pad-public-border);
+    background: var(--pad-public-card);
+  }
+
+  .publicThemeDark .competitionCard:hover,
+  .publicThemeDark .competitionCard:focus-visible {
+    border-color: var(--pad-public-orange-border);
+    background: #0b245f;
+  }
+
+  .publicThemeDark .accordionHeader {
+    border-bottom-color: #d8e2ee;
+    background: #ffffff;
+    color: #061a4d;
+  }
+
+  .publicThemeDark .accordionHeader:hover {
+    background: #eaf7ff;
+  }
+
+  .publicThemeDark .accordionItemOpen .accordionHeader {
+    background: #ffe8d1;
+    color: #061a4d;
+  }
+
+  .publicThemeDark .accordionPanel {
+    background: var(--pad-public-surface);
+  }
+
+  .publicThemeDark .matchCard_scheduled,
+  .publicThemeDark .matchCard_postponed {
+    background: var(--pad-public-card);
+  }
+
+  .publicThemeDark .matchCard_played {
+    border-color: var(--pad-public-blue-soft);
+    background: var(--pad-public-surface);
+  }
+
+  .publicThemeDark .scorePill {
+    border-color: #9ddcff;
+    background: #d7f0ff;
+    color: #061a4d;
+  }
+
+  .publicThemeDark .setChip {
+    border-color: #9ddcff;
+    background: #102b66;
+    color: #d7f0ff;
+  }
+
+  .page {
+    min-height: 100dvh;
+    background:
+      radial-gradient(circle at top, rgb(21 155 255 / 18%), transparent 16rem),
+      var(--pad-public-bg);
+    color: var(--pad-public-text);
+  }
+
+  .hero {
+    border-bottom: 1px solid var(--pad-public-border);
+    background:
+      radial-gradient(circle at top, rgb(21 155 255 / 14%), transparent 14rem),
+      linear-gradient(180deg, var(--pad-public-surface), var(--pad-public-bg));
+    color: var(--pad-public-text);
+    padding: max(0.75rem, env(safe-area-inset-top)) 1rem 0.75rem;
+  }
+
+  .nav {
+    position: absolute;
+    top: max(0.85rem, env(safe-area-inset-top));
+    right: 1rem;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    width: auto;
+  }
+
+  .adminLink {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border-color: var(--pad-public-blue-border);
+    border-radius: 999px;
+    background: var(--pad-public-surface);
+    color: var(--pad-public-navy);
+    padding: 0;
+    box-shadow: 0 0.75rem 1.5rem rgb(6 26 77 / 12%);
+  }
+
+  .adminLink:hover {
+    border-color: var(--pad-public-orange-border);
+    background: var(--pad-public-orange-soft);
+    text-decoration: none;
+  }
+
+  .themeToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 1px solid var(--pad-public-blue-border);
+    border-radius: 999px;
+    background: var(--pad-public-surface);
+    color: var(--pad-public-navy);
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0 0.65rem;
+    box-shadow: 0 0.75rem 1.5rem rgb(6 26 77 / 12%);
+  }
+
+  .themeToggle:hover {
+    border-color: var(--pad-public-orange-border);
+    background: var(--pad-public-orange-soft);
+  }
+
+  .emptyState .adminLink {
+    width: auto;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0.6rem 0.9rem;
+  }
+
+  .adminLinkText {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .adminIcon {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .heroContent {
+    justify-items: center;
+    gap: 0.45rem;
+    padding-top: 1.95rem;
+    text-align: center;
+  }
+
+  .heroLogo {
+    width: clamp(3.5rem, 18vw, 4.5rem);
+    margin: 0;
+    object-fit: contain;
+  }
+
+  .brandTagline {
+    display: block;
+    margin: 0 0 0.25rem;
+    color: var(--pad-public-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .tournamentHeroCard {
+    display: grid;
+    gap: 0.3rem;
+    width: 100%;
+    max-width: 28rem;
+    border: 1px solid var(--pad-public-border);
+    border-radius: 0.9rem;
+    background: var(--pad-public-card);
+    padding: 0.75rem;
+    box-shadow: 0 0.65rem 1.4rem rgb(2 11 38 / 18%);
+  }
+
+  .heroContent h1 {
+    color: var(--pad-public-text);
+    font-size: clamp(1.25rem, 6vw, 1.5rem);
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  .heroContent p {
+    color: var(--pad-public-muted);
+  }
+
+  .heroHint {
+    color: var(--pad-public-muted);
+  }
+
+  .eyebrow {
+    margin: 0;
+    color: var(--pad-public-blue);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+  }
+
+  .tournamentSelect {
+    gap: 0.3rem;
+    max-width: none;
+    color: var(--pad-public-text);
+    font-size: 0.72rem;
+  }
+
+  .tournamentSelect select {
+    min-height: 2.85rem;
+    border-color: var(--pad-public-blue-border);
+    border-radius: 0.85rem;
+    background: #ffffff;
+    color: var(--pad-public-navy);
+    font-weight: 800;
+  }
+
+  .tournamentHeroCard .tournamentSelect {
+    width: 100%;
+  }
+
+  .tournamentHeroCard .tournamentSelect span {
+    color: var(--pad-public-muted);
+  }
+
+  .tournamentHeroCard .tournamentSelect select {
+    background: #f4f8fc;
+    color: var(--pad-public-navy);
+  }
+
+  .selectionSelect {
+    display: none;
+  }
+
+  .competitionCards {
+    display: grid;
+    gap: 0.8rem;
+    width: 100%;
+    margin-top: 0.35rem;
+  }
+
+  .competitionCard {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    min-height: 5.25rem;
+    border: 1px solid var(--pad-public-border);
+    border-radius: 1.15rem;
+    background: var(--pad-public-card);
+    color: var(--pad-public-text);
+    cursor: pointer;
+    padding: 0.9rem;
+    text-align: left;
+    box-shadow: 0 1.25rem 2.25rem rgb(6 26 77 / 12%);
+  }
+
+  .competitionCard:hover,
+  .competitionCard:focus-visible {
+    border-color: var(--pad-public-orange-border);
+    background: var(--pad-public-orange-soft);
+  }
+
+  .competitionIcon {
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid var(--pad-public-orange-border);
+    border-radius: 1rem;
+    background: var(--pad-public-orange-soft);
+    color: var(--pad-public-navy);
+    place-items: center;
+  }
+
+  .competitionBody {
+    display: grid;
+    gap: 0.22rem;
+    min-width: 0;
+  }
+
+  .competitionBody strong {
+    overflow: hidden;
+    color: var(--pad-public-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .competitionBody small {
+    overflow: hidden;
+    color: var(--pad-public-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .competitionBody em {
+    width: max-content;
+    border-radius: 999px;
+    background: var(--pad-public-blue-soft);
+    color: var(--pad-public-navy);
+    font-size: 0.75rem;
+    font-style: normal;
+    font-weight: 800;
+    padding: 0.16rem 0.5rem;
+  }
+
+  .content {
+    gap: 1rem;
+    padding: 0.75rem 1rem calc(6.25rem + env(safe-area-inset-bottom));
+  }
+
+  .matchCard {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0.55rem;
+    border-radius: 1rem;
+    padding: 0.85rem;
+    transform: none;
+  }
+
+  .matchMain {
+    order: 1;
+    justify-items: stretch;
+  }
+
+  .matchSchedule {
+    order: 2;
+  }
+
+  .matchTopline {
+    justify-content: space-between;
+    align-items: flex-start;
+    width: auto;
+  }
+
+  .matchTeams {
+    justify-content: flex-start;
+    gap: 0.35rem;
+    font-size: inherit;
+  }
+
+  .scorePill {
+    min-width: 5.5rem;
+    font-size: 1.45rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .tabs {
+    display: grid;
+    position: fixed;
+    z-index: 20;
+    right: 0.85rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: 0.85rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+    border: 1px solid var(--pad-public-blue-border);
+    border-radius: 999px;
+    background: var(--pad-public-navy);
+    padding: 0.35rem;
+    box-shadow: 0 1rem 2.5rem rgb(2 11 38 / 38%);
+    backdrop-filter: blur(18px);
+  }
+
+  .tabButton {
+    flex-direction: column;
+    gap: 0.22rem;
+    min-width: 0;
+    min-height: 3.1rem;
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 0.68rem;
+    padding: 0.45rem 0.35rem;
+  }
+
+  .tabButtonActive {
+    background: var(--pad-public-orange);
+    color: var(--pad-public-navy);
+    box-shadow: 0 0.5rem 1.25rem rgb(255 122 0 / 28%);
+  }
+
+  .tabButton:hover {
+    background: rgb(21 155 255 / 24%);
+    color: #ffffff;
+  }
+
+  .tabButtonActive:hover {
+    background: var(--pad-public-orange);
+    color: var(--pad-public-navy);
+  }
+
+  .sectionHeader h2,
+  .sectionHeader span,
+  .muted {
+    color: var(--pad-public-text);
+  }
+
+  .sectionHeader span,
+  .muted {
+    color: var(--pad-public-muted);
+  }
+
+  .standingCard,
+  .accordionItem,
+  .matchCard {
+    border-color: var(--pad-public-border);
+    border-radius: 1rem;
+    background: var(--pad-public-card);
+    color: var(--pad-public-text);
+    box-shadow: 0 0.85rem 1.75rem rgb(6 26 77 / 10%);
+  }
+
+  .standingCard span,
+  .standingCard b,
+  .standingCard strong {
+    color: var(--pad-public-text);
+  }
+
+  .position {
+    background: var(--pad-public-blue-soft);
+    color: var(--pad-public-navy);
+  }
+
+  .positionPodium {
+    border-color: var(--pad-public-orange-border);
+    background: var(--pad-public-orange-soft);
+    color: var(--pad-public-navy);
+  }
+
+  .positionGold {
+    border-color: #b45309;
+    background: #f59e0b;
+    color: #111827;
+  }
+
+  .positionSilver {
+    border-color: #64748b;
+    background: #94a3b8;
+    color: #0f172a;
+  }
+
+  .positionBronze {
+    border-color: #92400e;
+    background: #b45309;
+    color: #ffffff;
+  }
+
+  .accordionItemOpen {
+    border-color: var(--pad-public-orange-border);
+    box-shadow:
+      inset 4px 0 0 var(--pad-public-orange),
+      0 0.85rem 1.75rem rgb(6 26 77 / 10%);
+  }
+
+  .accordionHeader {
+    min-height: 4.8rem;
+    border-bottom: 1px solid #d8e2ee;
+    background: #ffffff;
+    color: #061a4d;
+    padding: 0.9rem;
+  }
+
+  .accordionHeader:hover {
+    background: #eaf7ff;
+  }
+
+  .accordionItemOpen .accordionHeader {
+    background: #ffe8d1;
+    color: #061a4d;
+  }
+
+  .playerIdentity strong,
+  .teamStats small,
+  .teamStats b {
+    color: inherit;
+  }
+
+  .playerIdentity img,
+  .avatarFallback {
+    border-color: var(--pad-public-orange-border);
+    background: var(--pad-public-blue-soft);
+  }
+
+  .accordionPanel {
+    background: var(--pad-public-surface);
+  }
+
+  .matchCard_scheduled {
+    border-color: var(--pad-public-orange-border);
+    background: var(--pad-public-card);
+  }
+
+  .matchCard_played {
+    border-color: var(--pad-public-blue);
+    background: var(--pad-public-blue-soft);
+  }
+
+  .matchCard_postponed {
+    border-color: var(--pad-public-orange-border);
+    background: var(--pad-public-orange-soft);
+  }
+
+  .matchCard_cancelled {
+    border-color: rgb(203 213 225 / 42%);
+    background: rgb(148 163 184 / 16%);
+  }
+
+  .matchCard span,
+  .matchCard small,
+  .matchMeta dt {
+    color: var(--pad-public-muted);
+  }
+
+  .matchCard strong,
+  .matchMeta dd {
+    color: var(--pad-public-text);
+  }
+
+  .badge_scheduled {
+    background: #ff7a00;
+    color: #ffffff;
+  }
+
+  .badge_played {
+    background: #061a4d;
+    color: #ffffff;
+  }
+
+  .badge_postponed {
+    background: #ffe8d1;
+    color: #061a4d;
+  }
+
+  .badge_cancelled {
+    background: #ef4444;
+    color: #ffffff;
+  }
+
+  .outcomeWin {
+    color: #16a34a;
+  }
+
+  .outcomeLoss {
+    color: #dc2626;
+  }
+
+  .emptyState {
+    background:
+      radial-gradient(circle at top left, rgb(21 155 255 / 16%), transparent 18rem),
+      var(--pad-public-bg);
+    color: var(--pad-public-text);
+  }
+
+  .error {
+    color: #fecaca;
+  }
+}
+
+.matchCard .badge .badgeLabel,
+.matchCard .badge .badgeIcon {
+  color: inherit;
+}
+
+.matchCard .badge_scheduled .badgeLabel,
+.matchCard .badge_scheduled .badgeIcon,
+.matchCard .badge_played .badgeLabel,
+.matchCard .badge_played .badgeIcon,
+.matchCard .badge_cancelled .badgeLabel,
+.matchCard .badge_cancelled .badgeIcon {
+  color: #ffffff;
+}
+
+.matchCard .badge_postponed .badgeLabel,
+.matchCard .badge_postponed .badgeIcon {
+  color: #061a4d;
+}
+
+.matchCard .outcomeWin {
+  color: #16a34a;
+}
+
+.matchCard .outcomeLoss {
+  color: #dc2626;
+}
+
+.matchCard .winnerTeam {
+  color: var(--pad-public-text);
+}
+
+.matchCard .winnerIcon {
+  color: #16a34a;
+}
+
+.matchCard .scorePill {
+  color: #061a4d;
+}
+
+.matchCard .setChip {
+  color: #0f172a;
+}
+
+.publicThemeDark .matchCard .setChip {
+  color: #d7f0ff;
 }

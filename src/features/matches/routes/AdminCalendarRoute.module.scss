@@ -151,23 +151,23 @@
 }
 
 .badge_scheduled {
-  background: var(--color-primary-soft);
-  color: var(--color-muted);
+  background: #ff7a00;
+  color: #ffffff;
 }
 
 .badge_played {
-  background: var(--color-success-soft);
-  color: var(--color-success-text);
+  background: #061a4d;
+  color: #ffffff;
 }
 
 .badge_postponed {
-  background: var(--color-warning-soft);
-  color: var(--color-warning-text);
+  background: #ffe8d1;
+  color: #061a4d;
 }
 
 .badge_cancelled {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-text);
+  background: #ef4444;
+  color: #ffffff;
 }
 
 .tableWrap {
