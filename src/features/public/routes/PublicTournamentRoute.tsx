@@ -1,13 +1,12 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import type { IconType } from 'react-icons';
-import { FaCalendarDays, FaRankingStar, FaTrophy, FaUsers } from 'react-icons/fa6';
+import { FaCalendarDays, FaMedal, FaRankingStar, FaTrophy, FaUsers } from 'react-icons/fa6';
 import {
   MdAdminPanelSettings,
   MdCancel,
   MdCheckCircle,
-  MdDarkMode,
   MdEventBusy,
-  MdLightMode,
+  MdFilterList,
   MdSchedule
 } from 'react-icons/md';
 import { Link, useParams } from 'react-router-dom';
@@ -34,7 +33,8 @@ import { calculateStandings } from '@/features/standings/lib/standingsEngine';
 import styles from '@/features/public/routes/PublicTournamentRoute.module.scss';
 
 type PublicTab = 'standings' | 'teams' | 'calendar' | 'results';
-type PublicTheme = 'light' | 'dark';
+type MatchOutcome = 'win' | 'loss';
+type RecentResult = MatchOutcome | null;
 
 const publicTabs: { icon: IconType; id: PublicTab; label: string }[] = [
   { icon: FaRankingStar, id: 'standings', label: 'Classifica' },
@@ -53,28 +53,6 @@ function getErrorMessage(error: unknown): string {
 
 function cx(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
-}
-
-function getInitialPublicTheme(): PublicTheme {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-
-  return window.localStorage.getItem('pad-public-theme') === 'dark' ? 'dark' : 'light';
-}
-
-function usePublicTheme() {
-  const [theme, setTheme] = useState<PublicTheme>(getInitialPublicTheme);
-
-  useEffect(() => {
-    window.localStorage.setItem('pad-public-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
-  };
-
-  return { theme, toggleTheme };
 }
 
 function getTeamName(teams: PublicTeam[], teamId: string): string {
@@ -129,7 +107,7 @@ function getWinnerTeamId(match: MatchWithSets): string | null {
   return null;
 }
 
-function getTeamMatchOutcome(teamId: string, match: MatchWithSets): 'win' | 'loss' | null {
+function getTeamMatchOutcome(teamId: string, match: MatchWithSets): MatchOutcome | null {
   if (!isMatchPlayed(match)) {
     return null;
   }
@@ -149,19 +127,22 @@ function getMatchSortDate(match: MatchWithSets): string {
   return match.scheduled_at ?? match.updated_at;
 }
 
-function getLastPlayedMatchForTeam(teamId: string, matches: MatchWithSets[]): MatchWithSets | null {
+function getLastFiveResultsForTeam(teamId: string, matches: MatchWithSets[]): RecentResult[] {
   const playedMatches = matches.filter(
     (match) =>
       isMatchPlayed(match) && (match.home_team_id === teamId || match.away_team_id === teamId)
   );
 
-  if (playedMatches.length === 0) {
-    return null;
+  const results = [...playedMatches]
+    .sort((first, second) => getMatchSortDate(second).localeCompare(getMatchSortDate(first)))
+    .slice(0, 5)
+    .map((match) => getTeamMatchOutcome(teamId, match));
+
+  while (results.length < 5) {
+    results.push(null);
   }
 
-  return [...playedMatches].sort((first, second) =>
-    getMatchSortDate(second).localeCompare(getMatchSortDate(first))
-  )[0] ?? null;
+  return results;
 }
 
 function getStatusLabel(status: MatchWithSets['status']): string {
@@ -188,7 +169,7 @@ function getStatusIcon(status: MatchWithSets['status']): IconType {
 
 function getPodiumIcon(position: number): IconType | null {
   if (position >= 1 && position <= 3) {
-    return FaRankingStar;
+    return FaMedal;
   }
 
   return null;
@@ -362,18 +343,10 @@ function PublicTournamentSelectionPage({
   onSelectTournament: (slug: string | null) => void;
   tournaments: PublicTournament[];
 }) {
-  const { theme, toggleTheme } = usePublicTheme();
-
   return (
-    <main
-      className={cx(
-        styles.page,
-        theme === 'dark' ? styles.publicThemeDark : styles.publicThemeLight
-      )}
-    >
+    <main className={cx(styles.page, styles.publicThemeLight)}>
       <header className={styles.hero}>
         <nav className={styles.nav}>
-          <ThemeToggleButton onToggle={toggleTheme} theme={theme} />
           <Link className={styles.adminLink} to={appPaths.auth}>
             <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
             <span className={styles.adminLinkText}>Admin</span>
@@ -456,9 +429,14 @@ export function PublicTournamentView({
   header?: ReactNode;
   selector?: ReactNode;
 }) {
-  const { theme, toggleTheme } = usePublicTheme();
   const [activeTab, setActiveTab] = useState<PublicTab>('standings');
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
+  const [calendarFilterOpen, setCalendarFilterOpen] = useState(false);
+  const [calendarTeamSearch, setCalendarTeamSearch] = useState('');
+  const [selectedCalendarTeamIds, setSelectedCalendarTeamIds] = useState<string[]>([]);
+  const [resultsFilterOpen, setResultsFilterOpen] = useState(false);
+  const [resultsTeamSearch, setResultsTeamSearch] = useState('');
+  const [selectedResultsTeamIds, setSelectedResultsTeamIds] = useState<string[]>([]);
 
   const standings = useMemo(
     () => calculateStandings(data.teams, data.matches),
@@ -468,40 +446,47 @@ export function PublicTournamentView({
     () => sortCalendarMatches(data.matches),
     [data.matches]
   );
+  const filteredCalendarMatches = useMemo(() => {
+    if (selectedCalendarTeamIds.length === 0) {
+      return calendarMatches;
+    }
+
+    const selectedIds = new Set(selectedCalendarTeamIds);
+
+    return calendarMatches.filter(
+      (match) => selectedIds.has(match.home_team_id) || selectedIds.has(match.away_team_id)
+    );
+  }, [calendarMatches, selectedCalendarTeamIds]);
   const resultMatches = useMemo(
     () => sortResultMatches(data.matches),
     [data.matches]
   );
-  const lastOutcomesByTeamId = useMemo(() => {
-    const outcomes = new Map<string, 'win' | 'loss'>();
-
-    for (const team of data.teams) {
-      const lastMatch = getLastPlayedMatchForTeam(team.id, data.matches);
-      const outcome = lastMatch ? getTeamMatchOutcome(team.id, lastMatch) : null;
-
-      if (outcome) {
-        outcomes.set(team.id, outcome);
-      }
+  const filteredResultMatches = useMemo(() => {
+    if (selectedResultsTeamIds.length === 0) {
+      return resultMatches;
     }
 
-    return outcomes;
+    const selectedIds = new Set(selectedResultsTeamIds);
+
+    return resultMatches.filter(
+      (match) => selectedIds.has(match.home_team_id) || selectedIds.has(match.away_team_id)
+    );
+  }, [resultMatches, selectedResultsTeamIds]);
+  const recentResultsByTeamId = useMemo(() => {
+    const results = new Map<string, RecentResult[]>();
+
+    for (const team of data.teams) {
+      results.set(team.id, getLastFiveResultsForTeam(team.id, data.matches));
+    }
+
+    return results;
   }, [data.matches, data.teams]);
 
   return (
-    <main
-      className={cx(
-        styles.page,
-        header
-          ? styles.publicThemeLight
-          : theme === 'dark'
-            ? styles.publicThemeDark
-            : styles.publicThemeLight
-      )}
-    >
+    <main className={cx(styles.page, styles.publicThemeLight)}>
       {header ?? (
         <header className={styles.hero}>
           <nav className={styles.nav}>
-            <ThemeToggleButton onToggle={toggleTheme} theme={theme} />
             <Link className={styles.adminLink} to={appPaths.auth}>
               <MdAdminPanelSettings aria-hidden="true" className={styles.adminIcon} />
               <span className={styles.adminLinkText}>Admin</span>
@@ -564,21 +549,18 @@ export function PublicTournamentView({
                   </span>
                   <strong className={styles.teamNameWithOutcome}>
                     <span>{row.teamName}</span>
-                    <OutcomeIcon
-                      outcome={lastOutcomesByTeamId.get(row.teamId) ?? null}
-                      variant="last"
-                    />
+                    <RecentResultsStrip results={recentResultsByTeamId.get(row.teamId) ?? []} />
                   </strong>
-                  <span>PG {row.played}</span>
-                  <span>V {row.wins}</span>
-                  <span>P {row.losses}</span>
-                  <span>SV {row.setsWon}</span>
-                  <span>SP {row.setsLost}</span>
-                  <span>DS {row.setDiff}</span>
-                  <span>GV {row.gamesWon}</span>
-                  <span>GP {row.gamesLost}</span>
-                  <span>DG {row.gameDiff}</span>
-                  <b>{row.points} Pt</b>
+                  <b className={styles.mobilePoints}>{row.points} Pt</b>
+                  <div className={styles.mobileStandingStats}>
+                    <span>PG {row.played}</span>
+                    <span>V {row.wins}</span>
+                    <span>P {row.losses}</span>
+                    <span>SV {row.setsWon}</span>
+                    <span>SP {row.setsLost}</span>
+                    <span>DS {row.setDiff}</span>
+                    <span>DG {row.gameDiff}</span>
+                  </div>
                 </article>
               ))}
             </div>
@@ -594,9 +576,8 @@ export function PublicTournamentView({
                     <th>SV</th>
                     <th>SP</th>
                     <th>DS</th>
-                    <th>GV</th>
-                    <th>GP</th>
                     <th>DG</th>
+                    <th>Forma</th>
                     <th>Pt</th>
                   </tr>
                 </thead>
@@ -617,7 +598,6 @@ export function PublicTournamentView({
                             return PodiumIcon ? (
                               <>
                                 <PodiumIcon aria-hidden="true" className={styles.positionIcon} />
-                                <span>{row.position}</span>
                               </>
                             ) : (
                               row.position
@@ -628,10 +608,6 @@ export function PublicTournamentView({
                       <td>
                         <span className={styles.teamNameWithOutcome}>
                           <span>{row.teamName}</span>
-                          <OutcomeIcon
-                            outcome={lastOutcomesByTeamId.get(row.teamId) ?? null}
-                            variant="last"
-                          />
                         </span>
                       </td>
                       <td>{row.played}</td>
@@ -640,9 +616,10 @@ export function PublicTournamentView({
                       <td>{row.setsWon}</td>
                       <td>{row.setsLost}</td>
                       <td>{row.setDiff}</td>
-                      <td>{row.gamesWon}</td>
-                      <td>{row.gamesLost}</td>
                       <td>{row.gameDiff}</td>
+                      <td>
+                        <RecentResultsStrip results={recentResultsByTeamId.get(row.teamId) ?? []} compact />
+                      </td>
                       <td>
                         <strong>{row.points}</strong>
                       </td>
@@ -683,9 +660,30 @@ export function PublicTournamentView({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Calendario</h2>
-              <span>{calendarMatches.length.toString()} partite</span>
+              <span>{filteredCalendarMatches.length.toString()} partite trovate</span>
             </div>
-            <MatchList matches={calendarMatches} teams={data.teams} emptyLabel="Calendario non disponibile." />
+            <CalendarTeamFilter
+              isOpen={calendarFilterOpen}
+              onClear={() => {
+                setSelectedCalendarTeamIds([]);
+                setCalendarTeamSearch('');
+              }}
+              onSearchChange={setCalendarTeamSearch}
+              onToggleOpen={() => {
+                setCalendarFilterOpen((current) => !current);
+              }}
+              onToggleTeam={(teamId) => {
+                setSelectedCalendarTeamIds((current) =>
+                  current.includes(teamId)
+                    ? current.filter((selectedTeamId) => selectedTeamId !== teamId)
+                    : [...current, teamId]
+                );
+              }}
+              search={calendarTeamSearch}
+              selectedTeamIds={selectedCalendarTeamIds}
+              teams={data.teams}
+            />
+            <MatchList matches={filteredCalendarMatches} teams={data.teams} emptyLabel="Calendario non disponibile." />
           </section>
         ) : null}
 
@@ -693,9 +691,30 @@ export function PublicTournamentView({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Risultati</h2>
-              <span>{resultMatches.length.toString()} disputate</span>
+              <span>{filteredResultMatches.length.toString()} risultati trovati</span>
             </div>
-            <MatchList matches={resultMatches} teams={data.teams} emptyLabel="Nessun risultato disponibile." />
+            <CalendarTeamFilter
+              isOpen={resultsFilterOpen}
+              onClear={() => {
+                setSelectedResultsTeamIds([]);
+                setResultsTeamSearch('');
+              }}
+              onSearchChange={setResultsTeamSearch}
+              onToggleOpen={() => {
+                setResultsFilterOpen((current) => !current);
+              }}
+              onToggleTeam={(teamId) => {
+                setSelectedResultsTeamIds((current) =>
+                  current.includes(teamId)
+                    ? current.filter((selectedTeamId) => selectedTeamId !== teamId)
+                    : [...current, teamId]
+                );
+              }}
+              search={resultsTeamSearch}
+              selectedTeamIds={selectedResultsTeamIds}
+              teams={data.teams}
+            />
+            <MatchList matches={filteredResultMatches} teams={data.teams} emptyLabel="Nessun risultato disponibile." />
           </section>
         ) : null}
       </section>
@@ -703,26 +722,130 @@ export function PublicTournamentView({
   );
 }
 
-function ThemeToggleButton({
-  onToggle,
-  theme
+function RecentResultsStrip({
+  compact = false,
+  results
 }: {
-  onToggle: () => void;
-  theme: PublicTheme;
+  compact?: boolean;
+  results: RecentResult[];
 }) {
-  const Icon = theme === 'dark' ? MdLightMode : MdDarkMode;
-  const label = theme === 'dark' ? 'Light' : 'Dark';
+  const normalizedResults = [...results].slice(0, 5);
+
+  while (normalizedResults.length < 5) {
+    normalizedResults.push(null);
+  }
 
   return (
-    <button
-      aria-label={`Passa al tema ${theme === 'dark' ? 'chiaro' : 'scuro'}`}
-      className={styles.themeToggle}
-      onClick={onToggle}
-      type="button"
-    >
-      <Icon aria-hidden="true" className={styles.themeToggleIcon} />
-      <span>{label}</span>
-    </button>
+    <span className={cx(styles.recentResults, compact && styles.recentResultsCompact)}>
+      {normalizedResults.map((result, index) => {
+        const label = result === 'win' ? 'Vittoria' : result === 'loss' ? 'Sconfitta' : 'Nessuna partita';
+        const text = result === 'win' ? 'V' : result === 'loss' ? 'S' : '-';
+
+        return (
+          <span
+            aria-label={label}
+            className={cx(
+              styles.recentResult,
+              result === 'win' && styles.recentResultWin,
+              result === 'loss' && styles.recentResultLoss,
+              result === null && styles.recentResultEmpty
+            )}
+            key={`${index.toString()}-${text}`}
+            title={label}
+          >
+            {text}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function CalendarTeamFilter({
+  isOpen,
+  onClear,
+  onSearchChange,
+  onToggleOpen,
+  onToggleTeam,
+  search,
+  selectedTeamIds,
+  teams
+}: {
+  isOpen: boolean;
+  onClear: () => void;
+  onSearchChange: (value: string) => void;
+  onToggleOpen: () => void;
+  onToggleTeam: (teamId: string) => void;
+  search: string;
+  selectedTeamIds: string[];
+  teams: PublicTeam[];
+}) {
+  const filteredTeams = teams.filter((team) =>
+    getTeamDisplayLabel(team).toLowerCase().includes(search.trim().toLowerCase())
+  );
+  const selectedCount = selectedTeamIds.length;
+
+  return (
+    <div className={styles.calendarFilter}>
+      <div className={styles.calendarFilterBar}>
+        <button
+          aria-expanded={isOpen}
+          className={styles.calendarFilterToggle}
+          onClick={onToggleOpen}
+          type="button"
+        >
+          <span className={styles.calendarFilterLabel}>
+            <MdFilterList aria-hidden="true" className={styles.calendarFilterIcon} />
+            <span>Filtra per squadra</span>
+          </span>
+          <span className={styles.calendarFilterCount}>
+            {selectedCount === 0 ? 'Tutte' : selectedCount.toString()}
+          </span>
+        </button>
+        {selectedCount > 0 ? (
+          <button className={styles.clearFilterButton} onClick={onClear} type="button">
+            Pulisci filtri
+          </button>
+        ) : null}
+      </div>
+
+      {isOpen ? (
+        <div className={styles.calendarFilterPanel}>
+          {teams.length > 8 ? (
+            <label className={styles.calendarFilterSearch}>
+              <span>Cerca squadra</span>
+              <input
+                onChange={(event) => {
+                  onSearchChange(event.target.value);
+                }}
+                placeholder="Nome squadra"
+                type="search"
+                value={search}
+              />
+            </label>
+          ) : null}
+
+          <div className={styles.calendarFilterOptions}>
+            {filteredTeams.map((team) => {
+              const checked = selectedTeamIds.includes(team.id);
+
+              return (
+                <label className={styles.calendarFilterOption} key={team.id}>
+                  <input
+                    checked={checked}
+                    onChange={() => {
+                      onToggleTeam(team.id);
+                    }}
+                    type="checkbox"
+                  />
+                  <span>{getTeamDisplayLabel(team)}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -786,8 +909,9 @@ function TeamAccordionItem({
         </span>
         <span className={styles.teamStats}>
           <b>{points} pt</b>
-          <small>{partiteGiocate.toString()} giocate</small>
-          <small>{partiteDaGiocare.toString()} da giocare</small>
+          <small>
+            {partiteGiocate.toString()} giocate, {partiteDaGiocare.toString()} da giocare
+          </small>
         </span>
       </button>
 
