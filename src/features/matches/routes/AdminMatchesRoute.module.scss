@@ -118,6 +118,9 @@
   width: 1rem;
   height: 1rem;
   flex: 0 0 auto;
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
 }
 
 .statusLabel {
@@ -129,7 +132,7 @@
 
 .button {
   background: var(--color-accent);
-  color: var(--pad-navy-dark);
+  color: #ffffff;
   font-weight: 800;
 }
 
@@ -253,7 +256,7 @@
 
 .button:hover:not(:disabled) {
   background: var(--color-accent-hover);
-  color: var(--pad-navy-dark);
+  color: #ffffff;
 }
 
 .buttonSecondary:hover:not(:disabled) {

@@ -112,6 +112,7 @@ export function AdminTeamsRoute() {
   const [selectedBulkTeamIds, setSelectedBulkTeamIds] = useState<string[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isTeamListOpen, setIsTeamListOpen] = useState(false);
 
   const selectedTournament =
     tournamentOptions.find((tournament) => tournament.id === selectedTournamentId) ?? null;
@@ -190,6 +191,20 @@ export function AdminTeamsRoute() {
     updateTeamMutation.isPending ||
     deleteTeamMutation.isPending ||
     uploadLogoMutation.isPending;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 860px)');
+    const syncListOpenState = () => {
+      setIsTeamListOpen(mediaQuery.matches);
+    };
+
+    syncListOpenState();
+    mediaQuery.addEventListener('change', syncListOpenState);
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncListOpenState);
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedTournamentId && tournamentOptions.some((option) => option.id === selectedTournamentId)) {
@@ -394,7 +409,13 @@ export function AdminTeamsRoute() {
 
       <div className={styles.layout}>
         <aside className={cx(styles.panel, styles.listPanel)}>
-          <details className={styles.mobileListDetails} open>
+          <details
+            className={styles.mobileListDetails}
+            onToggle={(event) => {
+              setIsTeamListOpen(event.currentTarget.open);
+            }}
+            open={isTeamListOpen}
+          >
             <summary>Lista squadre</summary>
             <div className={styles.listControls}>
               <label className={styles.field}>
@@ -424,6 +445,9 @@ export function AdminTeamsRoute() {
           {teamsQuery.isError ? <p className={styles.error}>{getErrorMessage(teamsQuery.error)}</p> : null}
           {!teamsQuery.isLoading && selectedSeasonId && teams.length === 0 ? (
             <p className={styles.muted}>Nessuna squadra per questo torneo.</p>
+          ) : null}
+          {!teamsQuery.isLoading && teams.length > 0 && filteredTeams.length === 0 ? (
+            <p className={styles.muted}>Nessuna squadra trovata.</p>
           ) : null}
           <ul className={styles.list}>
             {filteredTeams.map((team) => (

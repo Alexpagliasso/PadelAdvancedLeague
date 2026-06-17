@@ -2,13 +2,13 @@
   min-height: 100dvh;
   background: var(--color-page);
   color: var(--color-text);
-  padding: 1.5rem;
+  padding: 1rem 1rem 5.5rem;
 }
 
 .header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
+  flex-direction: column;
   gap: 1rem;
   margin: 0 auto 1.5rem;
   max-width: 80rem;
@@ -21,7 +21,7 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   margin: 0 auto;
   max-width: 80rem;
@@ -37,6 +37,43 @@
 .panelTitle {
   margin: 0 0 1rem;
   font-size: 1rem;
+}
+
+.desktopOnlyTitle {
+  display: none;
+}
+
+.tournamentSearchField {
+  width: 100%;
+  margin: 0.85rem 0 1rem;
+}
+
+.tournamentSearchField .input {
+  min-height: 2.85rem;
+}
+
+.tournamentDetailDisclosure {
+  display: grid;
+  gap: 1rem;
+}
+
+.tournamentDetailSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--pad-blue-soft);
+  color: var(--pad-navy);
+  cursor: pointer;
+  font-weight: 900;
+  padding: 0.8rem 0.9rem;
+}
+
+.tournamentDetailBody {
+  display: grid;
+  gap: 1rem;
 }
 
 .list {
@@ -70,7 +107,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -197,8 +234,7 @@
 }
 
 .wizardSteps {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(4.5rem, 1fr));
+  display: flex;
   gap: 0.45rem;
   overflow-x: auto;
   margin: 0;
@@ -306,12 +342,129 @@
   gap: 0.5rem;
 }
 
+.detailTopBar {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.detailTabs {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--pad-blue-soft);
+  padding: 0.25rem;
+}
+
+.detailTab {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pad-navy);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.55rem 0.75rem;
+  white-space: nowrap;
+}
+
+.detailTab:hover,
+.detailTab:focus-visible {
+  background: var(--pad-orange-soft);
+}
+
+.detailTabActive {
+  background: var(--pad-navy);
+  color: #ffffff;
+}
+
+.actionBar {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 0.85rem 2.5rem rgb(2 11 38 / 0.18);
+  padding: 0.35rem;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border: 1px solid #d8e2ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #061a4d;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.5rem 0.7rem;
+}
+
+.actionButtonPrimary {
+  flex: 1 1 auto;
+  border-color: #ff7a00;
+  background: #ff7a00;
+  color: #ffffff;
+}
+
+.actionButtonText {
+  display: none;
+}
+
+.actionButtonPrimaryText {
+  display: inline;
+}
+
+.actionButton svg {
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.actionButton:hover:not(:disabled),
+.actionButton:focus-visible {
+  border-color: var(--pad-orange);
+  background: var(--pad-orange-soft);
+}
+
+.actionButton.actionButtonPrimary:hover:not(:disabled),
+.actionButton.actionButtonPrimary:focus-visible {
+  border-color: #e86d00;
+  background: #e86d00;
+  color: #ffffff;
+}
+
+.actionButtonDanger {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.hiddenPanel {
+  display: none;
+}
+
 .detailBlock {
   display: grid;
   gap: 1rem;
-  border-top: 1px solid var(--color-border);
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
+  margin-top: 1rem;
 }
 
 .configCard {
@@ -334,7 +487,7 @@
 
 .finalPhaseSummary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.65rem;
 }
 
@@ -502,7 +655,7 @@
 
 .configGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.65rem;
   margin: 0;
 }
@@ -529,7 +682,7 @@
 
 .dashboardGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -662,8 +815,8 @@
   gap: 0.45rem;
   border: 0;
   border-radius: 0.5rem;
-  background: var(--color-accent);
-  color: var(--pad-navy-dark);
+  background: #ff7a00;
+  color: #ffffff;
   cursor: pointer;
   font-weight: 800;
   padding: 0.7rem 0.9rem;
@@ -674,10 +827,10 @@
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  border: 1px solid var(--color-primary);
+  border: 1px solid #061a4d;
   border-radius: 0.5rem;
-  background: var(--color-primary);
-  color: var(--color-surface);
+  background: #061a4d;
+  color: #ffffff;
   cursor: pointer;
   padding: 0.7rem 0.9rem;
 }
@@ -689,8 +842,8 @@
   gap: 0.45rem;
   border: 0;
   border-radius: 0.5rem;
-  background: var(--color-danger-text);
-  color: var(--color-surface);
+  background: #dc2626;
+  color: #ffffff;
   cursor: pointer;
   padding: 0.7rem 0.9rem;
 }
@@ -699,6 +852,89 @@
   width: 1rem;
   height: 1rem;
   flex: 0 0 auto;
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.playerPicker {
+  position: relative;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.playerResults {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  padding: 0.4rem;
+}
+
+.playerResults button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.playerResults button:hover,
+.playerResults button:focus-visible {
+  background: var(--pad-blue-soft);
+}
+
+.selectedPlayerChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid var(--pad-orange-border);
+  border-radius: 999px;
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy);
+  padding: 0.35rem 0.45rem;
+}
+
+.selectedPlayerChip button {
+  display: inline-grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pad-navy);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.playerAvatar,
+.playerAvatarFallback {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.playerAvatar {
+  object-fit: cover;
+}
+
+.playerAvatarFallback {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--pad-orange-border);
+  background: var(--pad-blue-soft);
+  color: var(--pad-navy);
 }
 
 .button:disabled,
@@ -714,14 +950,6 @@
 }
 
 @media (max-width: 900px) {
-  .layout,
-  .grid,
-  .dashboardGrid,
-  .configGrid,
-  .finalPhaseSummary {
-    grid-template-columns: 1fr;
-  }
-
   .wizardCard {
     padding: 0.85rem;
   }
@@ -738,21 +966,85 @@
   .teamItem span {
     text-align: left;
   }
+
+}
+
+@media (min-width: 768px) {
+  .desktopOnlyTitle {
+    display: block;
+  }
+
+  .tournamentDetailSummary {
+    display: none;
+  }
+
+  .tournamentDetailDisclosure {
+    display: block;
+  }
+
+  .actionButtonText {
+    display: inline;
+  }
+
+  .actionButtonPrimary {
+    flex: 0 0 auto;
+  }
 }
 
 @media (min-width: 901px) {
+  .page {
+    padding: 1.5rem;
+  }
+
+  .header {
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .layout {
+    grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detailTopBar {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .actionBar {
+    position: static;
+    width: auto;
+    box-shadow: none;
+  }
+
+  .configGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .dashboardGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .finalPhaseSummary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .bracketList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 .button:hover:not(:disabled) {
-  background: var(--color-accent-hover);
-  color: var(--pad-navy-dark);
+  background: #e86d00;
+  color: #ffffff;
 }
 
 .buttonSecondary:hover:not(:disabled) {
-  border-color: var(--color-primary-hover);
-  background: var(--color-primary-hover);
-  color: var(--color-surface);
+  border-color: #0a2d7a;
+  background: #0a2d7a;
+  color: #ffffff;
 }

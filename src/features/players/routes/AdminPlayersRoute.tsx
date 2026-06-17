@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useMemo, useRef, useState } from 'react';
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { FaFloppyDisk, FaPlus, FaTrashCan, FaUpload } from 'react-icons/fa6';
 
 import type { Player } from '@/features/players/api/playersApi';
@@ -77,6 +77,7 @@ export function AdminPlayersRoute() {
   const [formError, setFormError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedBulkPlayerIds, setSelectedBulkPlayerIds] = useState<string[]>([]);
+  const [isPlayerListOpen, setIsPlayerListOpen] = useState(false);
 
   const selectedPlayer = players.find((player) => player.id === selectedPlayerId) ?? null;
   const filteredPlayers = useMemo(() => {
@@ -95,6 +96,20 @@ export function AdminPlayersRoute() {
     updatePlayerMutation.isPending ||
     deletePlayerMutation.isPending ||
     uploadPhotoMutation.isPending;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 860px)');
+    const syncListOpenState = () => {
+      setIsPlayerListOpen(mediaQuery.matches);
+    };
+
+    syncListOpenState();
+    mediaQuery.addEventListener('change', syncListOpenState);
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncListOpenState);
+    };
+  }, []);
 
   const handleNewPlayer = () => {
     setSelectedPlayerId(null);
@@ -212,7 +227,13 @@ export function AdminPlayersRoute() {
 
       <div className={styles.layout}>
         <aside className={cx(styles.panel, styles.listPanel)}>
-          <details className={styles.mobileListDetails} open>
+          <details
+            className={styles.mobileListDetails}
+            onToggle={(event) => {
+              setIsPlayerListOpen(event.currentTarget.open);
+            }}
+            open={isPlayerListOpen}
+          >
             <summary>Lista giocatori</summary>
             <div className={styles.listControls}>
               <label className={styles.field}>
@@ -241,6 +262,12 @@ export function AdminPlayersRoute() {
           {playersQuery.isLoading ? <p className={styles.muted}>Caricamento...</p> : null}
           {playersQuery.isError ? (
             <p className={styles.error}>{getErrorMessage(playersQuery.error)}</p>
+          ) : null}
+          {!playersQuery.isLoading && players.length === 0 ? (
+            <p className={styles.muted}>Nessun giocatore creato.</p>
+          ) : null}
+          {!playersQuery.isLoading && players.length > 0 && filteredPlayers.length === 0 ? (
+            <p className={styles.muted}>Nessun giocatore trovato.</p>
           ) : null}
           <ul className={styles.list}>
             {filteredPlayers.map((player) => (

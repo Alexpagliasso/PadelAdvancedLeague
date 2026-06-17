@@ -48,6 +48,11 @@ export type GeneratePlayoffPlayoutResult = {
   createdMatches: number;
 };
 
+export type ShuffleCalendarOrderInput = {
+  seasonId: string;
+  teamsCount: number;
+};
+
 type ResultSummary = {
   home_sets_won: number;
   away_sets_won: number;
@@ -210,8 +215,10 @@ export async function listMatchesBySeason(seasonId: string): Promise<MatchWithSe
     .from('matches')
     .select('*')
     .eq('season_id', seasonId)
+    .order('matchday', { ascending: true, nullsFirst: false })
+    .order('display_order', { ascending: true, nullsFirst: false })
     .order('scheduled_at', { ascending: true, nullsFirst: false })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (matchesError) {
     throw matchesError;
@@ -435,6 +442,8 @@ export async function generateRoundRobinCalendar(
         result_status: 'pending' as const,
         home_sets_won: 0,
         away_sets_won: 0,
+        matchday: null,
+        display_order: null,
         notes: null
       });
       existingPairs.add(pairKey);
@@ -445,13 +454,73 @@ export async function generateRoundRobinCalendar(
     return 0;
   }
 
-  const { error } = await supabase.from('matches').insert(matchesToInsert);
+  const roundSize = Math.max(1, Math.floor(uniqueTeamIds.length / 2));
+  const orderedMatchesToInsert = matchesToInsert.map((match, index) => ({
+    ...match,
+    matchday: Math.floor(index / roundSize) + 1,
+    display_order: index + 1
+  }));
+
+  const { error } = await supabase.from('matches').insert(orderedMatchesToInsert);
 
   if (error) {
     throw error;
   }
 
   return matchesToInsert.length;
+}
+
+export async function shuffleCalendarOrder(input: ShuffleCalendarOrderInput): Promise<void> {
+  if (input.teamsCount < 2) {
+    throw new Error('Servono almeno 2 squadre per rimescolare il calendario.');
+  }
+
+  const { data: matches, error } = await supabase
+    .from('matches')
+    .select('id, phase, matchday, display_order, scheduled_at, created_at')
+    .eq('season_id', input.seasonId)
+    .eq('phase', 'regular_season')
+    .order('display_order', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  if (matches.length === 0) {
+    throw new Error('Genera il calendario prima di rimescolare l’ordine.');
+  }
+
+  const shuffled = [...matches];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    const current = shuffled[index];
+    const random = shuffled[randomIndex];
+
+    if (!current || !random) {
+      continue;
+    }
+
+    shuffled[index] = random;
+    shuffled[randomIndex] = current;
+  }
+
+  const roundSize = Math.max(1, Math.floor(input.teamsCount / 2));
+
+  for (const [index, match] of shuffled.entries()) {
+    const { error: updateError } = await supabase
+      .from('matches')
+      .update({
+        matchday: Math.floor(index / roundSize) + 1,
+        display_order: index + 1
+      })
+      .eq('id', match.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+  }
 }
 
 type BracketSeed = {

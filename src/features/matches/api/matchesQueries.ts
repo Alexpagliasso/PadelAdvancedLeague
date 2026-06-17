@@ -2,18 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createMatch,
+  generateKnockoutBracket,
   generatePlayoffPlayoutBrackets,
   generateRoundRobinCalendar,
   getMatchById,
   listTournamentBrackets,
   listMatchesBySeason,
   resetMatchResult,
+  shuffleCalendarOrder,
   updateMatch,
   type GeneratePlayoffPlayoutInput,
   type SaveMatchInput,
+  type ShuffleCalendarOrderInput,
   type UpdateMatchInput
 } from '@/features/matches/api/matchesApi';
 import { publicTournamentQueryKeys } from '@/features/public/api/publicTournamentQueries';
+import type { StandingRow } from '@/features/standings/lib/standingsEngine';
 import { tournamentQueryKeys } from '@/features/tournaments/api/tournamentsQueries';
 
 export const matchQueryKeys = {
@@ -110,6 +114,67 @@ export function useGenerateCalendarMutation(seasonId: string | null) {
       if (seasonId) {
         await queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) });
       }
+    }
+  });
+}
+
+export function useGenerateKnockoutMutation(
+  tournamentId: string | null,
+  seasonId: string | null
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ standings, allowByes }: { standings: StandingRow[]; allowByes: boolean }) => {
+      if (!tournamentId || !seasonId) {
+        throw new Error('Seleziona un torneo prima di generare il tabellone.');
+      }
+
+      return generateKnockoutBracket({
+        tournamentId,
+        seasonId,
+        standings,
+        allowByes
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        tournamentId
+          ? queryClient.invalidateQueries({
+              queryKey: matchQueryKeys.bracketsByTournament(tournamentId)
+            })
+          : Promise.resolve(),
+        seasonId
+          ? queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) })
+          : Promise.resolve(),
+        queryClient.invalidateQueries({ queryKey: publicTournamentQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: tournamentQueryKeys.adminList() })
+      ]);
+    }
+  });
+}
+
+export function useShuffleCalendarOrderMutation(seasonId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Omit<ShuffleCalendarOrderInput, 'seasonId'>) => {
+      if (!seasonId) {
+        throw new Error('Seleziona un torneo prima di rimescolare il calendario.');
+      }
+
+      return shuffleCalendarOrder({
+        seasonId,
+        ...input
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        seasonId
+          ? queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) })
+          : Promise.resolve(),
+        queryClient.invalidateQueries({ queryKey: publicTournamentQueryKeys.all })
+      ]);
     }
   });
 }

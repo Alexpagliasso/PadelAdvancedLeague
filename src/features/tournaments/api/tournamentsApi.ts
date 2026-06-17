@@ -1,10 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
-import {
-  generateKnockoutBracket,
-  generateRoundRobinCalendar
-} from '@/features/matches/api/matchesApi';
-import type { StandingRow } from '@/features/standings/lib/standingsEngine';
-import { createTeam, type Team } from '@/features/teams/api/teamsApi';
+import { createTeam } from '@/features/teams/api/teamsApi';
 import type {
   Database,
   SeasonStatus,
@@ -41,7 +36,7 @@ export type WizardTeamInput = {
 
 export type CreateConfiguredTournamentInput = CreateTournamentInput & {
   status: TournamentStatus;
-  teams: WizardTeamInput[];
+  teams?: WizardTeamInput[];
   split_regular_season_rounds: boolean;
 };
 
@@ -157,33 +152,10 @@ export async function createTournament(input: CreateTournamentInput): Promise<To
   return data;
 }
 
-function createStandingRowsFromRankedTeams(
-  teams: { ranking: number; team: Team }[]
-): StandingRow[] {
-  return [...teams]
-    .sort((first, second) => first.ranking - second.ranking)
-    .map(({ ranking, team }, index) => ({
-      teamId: team.id,
-      teamName: team.name,
-      position: index + 1,
-      played: 0,
-      wins: 0,
-      losses: 0,
-      setsWon: 0,
-      setsLost: 0,
-      setDiff: 0,
-      gamesWon: 0,
-      gamesLost: 0,
-      gameDiff: 0,
-      points: 0,
-      headToHeadPoints: ranking
-    }));
-}
-
 export async function createConfiguredTournament(
   input: CreateConfiguredTournamentInput
 ): Promise<Tournament> {
-  const { status, teams } = input;
+  const { teams = [] } = input;
   const tournamentInput: CreateTournamentInput = {
     name: input.name,
     slug: input.slug,
@@ -198,10 +170,6 @@ export async function createConfiguredTournament(
   const tournament = await createTournament(tournamentInput);
 
   try {
-    if (status !== 'draft') {
-      await updateTournamentStatus(tournament.id, status);
-    }
-
     const seasons = await listSeasonsByTournament(tournament.id);
     const mainSeason = seasons.find((season) => season.slug === 'main') ?? seasons[0] ?? null;
 
@@ -209,52 +177,13 @@ export async function createConfiguredTournament(
       throw new Error('Season principale non trovata per il torneo appena creato.');
     }
 
-    const createdTeams: Team[] = [];
-    const rankedTeams: { ranking: number; team: Team }[] = [];
-
-    for (const [index, teamInput] of teams.entries()) {
-      const createdTeam = await createTeam({
+    for (const teamInput of teams) {
+      await createTeam({
         season_id: mainSeason.id,
         name: teamInput.name,
         slug: teamInput.slug,
         logo_url: null,
         player_ids: teamInput.player_ids
-      });
-
-      createdTeams.push(createdTeam);
-
-      if (teamInput.ranking !== null) {
-        rankedTeams.push({ ranking: teamInput.ranking, team: createdTeam });
-      } else {
-        rankedTeams.push({ ranking: index + 1, team: createdTeam });
-      }
-    }
-
-    if (tournamentInput.format === 'round_robin' || tournamentInput.format === 'group_playoff_playout') {
-      await generateRoundRobinCalendar(
-        mainSeason.id,
-        createdTeams.map((team) => team.id)
-      );
-
-      const { error: updateError } = await supabase
-        .from('tournaments')
-        .update({
-          current_phase: 'regular_season',
-          regular_calendar_generated_at: new Date().toISOString()
-        })
-        .eq('id', tournament.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-    }
-
-    if (tournamentInput.format === 'knockout') {
-      await generateKnockoutBracket({
-        tournamentId: tournament.id,
-        seasonId: mainSeason.id,
-        standings: createStandingRowsFromRankedTeams(rankedTeams),
-        allowByes: tournamentInput.allow_byes
       });
     }
 
@@ -305,9 +234,19 @@ export async function updateTournamentStatus(
   id: string,
   status: TournamentStatus
 ): Promise<Tournament> {
+  const values =
+    status === 'active'
+      ? {
+          status,
+          is_public: true
+        }
+      : {
+          status
+        };
+
   const { data, error } = await supabase
     .from('tournaments')
-    .update({ status })
+    .update(values)
     .eq('id', id)
     .select('*')
     .single();

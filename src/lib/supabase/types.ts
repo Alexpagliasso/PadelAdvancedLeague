@@ -134,6 +134,8 @@ export type Database = {
           result_status: ResultStatus;
           home_sets_won: number;
           away_sets_won: number;
+          matchday: number | null;
+          display_order: number | null;
           notes: string | null;
         }
       >;
