@@ -15,6 +15,7 @@ import {
 import { Link, useParams } from 'react-router-dom';
 
 import { appPaths } from '@/app/router/paths';
+import { PageLoader } from '@/components/loaders/PadLoaders';
 import type {
   MatchWithSets,
   TournamentBracketMatch,
@@ -357,11 +358,7 @@ export function PublicTournamentRoute() {
   }, [isSlugRoute, tournamentsQuery.data]);
 
   if (!isSlugRoute && tournamentsQuery.isLoading) {
-    return (
-      <main className={styles.page}>
-        <p className={styles.muted}>Caricamento tornei...</p>
-      </main>
-    );
+    return <PageLoader label="Caricamento tornei..." />;
   }
 
   if (!isSlugRoute && tournamentsQuery.isError) {
@@ -396,11 +393,7 @@ export function PublicTournamentRoute() {
   }
 
   if (tournamentQuery.isLoading) {
-    return (
-      <main className={styles.page}>
-        <p className={styles.muted}>Caricamento torneo...</p>
-      </main>
-    );
+    return <PageLoader label="Caricamento torneo..." />;
   }
 
   if (tournamentQuery.isError) {
@@ -450,52 +443,71 @@ function PublicTournamentSelectionPage({
   tournaments: PublicTournament[];
 }) {
   const [createModalStep, setCreateModalStep] = useState<'closed' | 'choice' | 'visitor'>('closed');
+  const [search, setSearch] = useState('');
+  const filteredTournaments = tournaments.filter((tournament) =>
+    tournament.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
 
   return (
     <main className={cx(styles.page, styles.publicThemeLight, styles.selectionPage)}>
       <header className={cx(styles.hero, styles.selectionHero)}>
         <PublicBrandBar />
         <div className={styles.heroContent}>
-          <div className={styles.selectionIntroCard}>
-            <img className={styles.selectionLogo} src="/assets/brand/pad-logo.png" alt="PAD" />
-            <h1>Scegli competizione</h1>
-            <p>Seleziona il torneo da seguire</p>
-          </div>
-          <div className={styles.competitionCards}>
-            {tournaments.map((tournament) => (
+          <div className={styles.selectionPanel}>
+            <div className={styles.selectionIntroCard}>
+              <h1>Scegli competizione</h1>
+              <p>Seleziona il torneo da seguire</p>
+            </div>
+            <label className={styles.selectionSearch}>
+              <span className={styles.srOnly}>Cerca torneo</span>
+              <input
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                }}
+                placeholder="Cerca torneo..."
+                type="search"
+                value={search}
+              />
+            </label>
+            <div className={styles.competitionCards}>
+              {filteredTournaments.map((tournament) => (
+                <button
+                  className={styles.competitionCard}
+                  key={tournament.id}
+                  onClick={() => {
+                    onSelectTournament(tournament.slug);
+                  }}
+                  type="button"
+                >
+                  <span className={styles.competitionIcon}>
+                    <FaTrophy aria-hidden="true" />
+                  </span>
+                  <span className={styles.competitionBody}>
+                    <strong>{tournament.name}</strong>
+                    {tournament.description ? <small>{tournament.description}</small> : null}
+                    <em>Attivo</em>
+                  </span>
+                </button>
+              ))}
+              {filteredTournaments.length === 0 ? (
+                <p className={styles.selectionNoResults}>Nessun torneo trovato.</p>
+              ) : null}
               <button
-                className={styles.competitionCard}
-                key={tournament.id}
+                className={cx(styles.competitionCard, styles.createCompetitionCard)}
                 onClick={() => {
-                  onSelectTournament(tournament.slug);
+                  setCreateModalStep('choice');
                 }}
                 type="button"
               >
                 <span className={styles.competitionIcon}>
-                  <FaTrophy aria-hidden="true" />
+                  <FaPlus aria-hidden="true" />
                 </span>
                 <span className={styles.competitionBody}>
-                  <strong>{tournament.name}</strong>
-                  {tournament.description ? <small>{tournament.description}</small> : null}
-                  <em>Attivo</em>
+                  <strong>Crea nuovo torneo</strong>
+                  <small>Vuoi organizzare una nuova competizione?</small>
                 </span>
               </button>
-            ))}
-            <button
-              className={cx(styles.competitionCard, styles.createCompetitionCard)}
-              onClick={() => {
-                setCreateModalStep('choice');
-              }}
-              type="button"
-            >
-              <span className={styles.competitionIcon}>
-                <FaPlus aria-hidden="true" />
-              </span>
-              <span className={styles.competitionBody}>
-                <strong>Crea nuovo torneo</strong>
-                <small>Vuoi organizzare una nuova competizione?</small>
-              </span>
-            </button>
+            </div>
           </div>
         </div>
       </header>

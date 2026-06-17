@@ -1,0 +1,72 @@
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgb(21 155 255 / 30%);
+  border-top-color: var(--pad-orange);
+  border-radius: 999px;
+  animation: padSpin 800ms linear infinite;
+}
+
+.inlineLoader,
+.buttonLoader,
+.sectionLoader,
+.pageLoader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  color: var(--pad-navy);
+  font-weight: 800;
+}
+
+.sectionLoader {
+  width: 100%;
+  min-height: 8rem;
+  border: 1px solid var(--pad-border);
+  border-radius: 1rem;
+  background: var(--pad-surface);
+  padding: 1rem;
+}
+
+.pageLoader {
+  display: grid;
+  min-height: 100dvh;
+  background: var(--pad-bg);
+  color: var(--pad-navy);
+  place-content: center;
+  text-align: center;
+}
+
+.pageLoader img {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 0.75rem;
+  object-fit: contain;
+}
+
+.pageLoader .spinner {
+  margin: 0 auto;
+}
+
+.buttonLoader {
+  color: inherit;
+}
+
+.buttonLoader .spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-color: rgb(6 26 77 / 30%);
+  border-top-color: currentcolor;
+}
+
+@keyframes padSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

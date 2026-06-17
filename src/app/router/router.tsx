@@ -12,13 +12,11 @@ import {
 import { useAuth } from '@/features/auth/model/useAuth';
 import { LoginRoute } from '@/features/auth/routes/LoginRoute';
 import { AdminLayout } from '@/features/admin/layout/AdminLayout';
-import { AdminDashboardRoute } from '@/features/admin/routes/AdminDashboardRoute';
 import { AdminPlaceholderRoute } from '@/features/admin/routes/AdminPlaceholderRoute';
 import { AdminCalendarRoute } from '@/features/matches/routes/AdminCalendarRoute';
 import { AdminMatchesRoute } from '@/features/matches/routes/AdminMatchesRoute';
 import { AdminPlayersRoute } from '@/features/players/routes/AdminPlayersRoute';
 import { PublicTournamentRoute } from '@/features/public/routes/PublicTournamentRoute';
-import { AdminStandingsRoute } from '@/features/standings/routes/AdminStandingsRoute';
 import { AdminTeamsRoute } from '@/features/teams/routes/AdminTeamsRoute';
 import { AdminTournamentsRoute } from '@/features/tournaments/routes/AdminTournamentsRoute';
 
@@ -91,7 +89,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <AdminDashboardRoute />
+            element: <AdminTournamentsRoute />
           },
           {
             path: 'tournaments',
@@ -116,10 +114,6 @@ export const router = createBrowserRouter([
           {
             path: 'calendar',
             element: <AdminCalendarRoute />
-          },
-          {
-            path: 'standings',
-            element: <AdminStandingsRoute />
           },
           {
             path: 'settings',

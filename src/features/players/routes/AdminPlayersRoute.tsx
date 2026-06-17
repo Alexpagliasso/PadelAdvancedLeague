@@ -75,8 +75,21 @@ export function AdminPlayersRoute() {
   const [form, setForm] = useState<PlayerFormState>(emptyPlayerForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [selectedBulkPlayerIds, setSelectedBulkPlayerIds] = useState<string[]>([]);
 
   const selectedPlayer = players.find((player) => player.id === selectedPlayerId) ?? null;
+  const filteredPlayers = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) {
+      return players;
+    }
+
+    return players.filter((player) =>
+      [player.display_name, player.first_name, player.last_name].join(' ').toLowerCase().includes(query)
+    );
+  }, [players, search]);
   const isBusy =
     createPlayerMutation.isPending ||
     updatePlayerMutation.isPending ||
@@ -154,6 +167,36 @@ export function AdminPlayersRoute() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedBulkPlayerIds.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Eliminare ${selectedBulkPlayerIds.length.toString()} giocatori selezionati?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setFormError(null);
+
+    try {
+      for (const playerId of selectedBulkPlayerIds) {
+        await deletePlayerMutation.mutateAsync(playerId);
+      }
+      setSelectedBulkPlayerIds([]);
+      if (selectedPlayerId && selectedBulkPlayerIds.includes(selectedPlayerId)) {
+        handleNewPlayer();
+      }
+    } catch (error) {
+      setFormError(
+        `Eliminazione non completata. Verifica che i giocatori non siano associati a squadre. ${getErrorMessage(error)}`
+      );
+    }
+  };
+
   return (
     <section className={styles.page}>
       <header className={styles.header}>
@@ -168,25 +211,65 @@ export function AdminPlayersRoute() {
       </header>
 
       <div className={styles.layout}>
-        <aside className={styles.panel}>
+        <aside className={cx(styles.panel, styles.listPanel)}>
+          <details className={styles.mobileListDetails} open>
+            <summary>Lista giocatori</summary>
+            <div className={styles.listControls}>
+              <label className={styles.field}>
+                <span className={styles.label}>Cerca giocatore</span>
+                <input
+                  className={styles.input}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                  }}
+                  placeholder="Cerca per nome..."
+                  type="search"
+                  value={search}
+                />
+              </label>
+              <button
+                className={styles.buttonDanger}
+                disabled={isBusy || selectedBulkPlayerIds.length === 0}
+                onClick={() => void handleBulkDelete()}
+                type="button"
+              >
+                <FaTrashCan aria-hidden="true" className={styles.buttonIcon} />
+                <span>Elimina selezionati</span>
+              </button>
+            </div>
           <h2 className={styles.panelTitle}>Lista giocatori</h2>
           {playersQuery.isLoading ? <p className={styles.muted}>Caricamento...</p> : null}
           {playersQuery.isError ? (
             <p className={styles.error}>{getErrorMessage(playersQuery.error)}</p>
           ) : null}
           <ul className={styles.list}>
-            {players.map((player) => (
+            {filteredPlayers.map((player) => (
               <li key={player.id}>
-                <button
-                  className={cx(
-                    styles.listButton,
-                    player.id === selectedPlayerId && styles.listButtonActive
-                  )}
-                  onClick={() => {
-                    handleSelectPlayer(player);
-                  }}
-                  type="button"
-                >
+                <div className={styles.selectableListItem}>
+                  <label className={styles.bulkCheckbox}>
+                    <input
+                      checked={selectedBulkPlayerIds.includes(player.id)}
+                      onChange={(event) => {
+                        setSelectedBulkPlayerIds((current) =>
+                          event.target.checked
+                            ? [...current, player.id]
+                            : current.filter((playerId) => playerId !== player.id)
+                        );
+                      }}
+                      type="checkbox"
+                    />
+                    <span className={styles.srOnly}>Seleziona {player.display_name}</span>
+                  </label>
+                  <button
+                    className={cx(
+                      styles.listButton,
+                      player.id === selectedPlayerId && styles.listButtonActive
+                    )}
+                    onClick={() => {
+                      handleSelectPlayer(player);
+                    }}
+                    type="button"
+                  >
                   {player.photo_url ? (
                     <img alt="" className={styles.avatar} src={player.photo_url} />
                   ) : (
@@ -198,10 +281,12 @@ export function AdminPlayersRoute() {
                       {player.first_name} {player.last_name}
                     </small>
                   </span>
-                </button>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
+          </details>
         </aside>
 
         <section className={styles.panel}>

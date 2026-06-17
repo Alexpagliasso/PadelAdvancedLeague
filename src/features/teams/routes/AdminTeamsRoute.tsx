@@ -108,6 +108,8 @@ export function AdminTeamsRoute() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [form, setForm] = useState<TeamFormState>(emptyTeamForm);
   const [playerSearch, setPlayerSearch] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
+  const [selectedBulkTeamIds, setSelectedBulkTeamIds] = useState<string[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -123,6 +125,20 @@ export function AdminTeamsRoute() {
   const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
+  const filteredTeams = useMemo(() => {
+    const query = teamSearch.trim().toLowerCase();
+
+    if (!query) {
+      return teams;
+    }
+
+    return teams.filter((team) => {
+      const playerNames = team.members
+        .map((member) => players.find((player) => player.id === member.player_id)?.display_name ?? '')
+        .join(' ');
+      return [team.name, playerNames].join(' ').toLowerCase().includes(query);
+    });
+  }, [teamSearch, teams, players]);
   const selectedTeam = teams.find((team) => team.id === selectedTeamId) ?? null;
   const selectedPlayerIds = useMemo(
     () => [form.playerOneId, form.playerTwoId].filter(Boolean),
@@ -192,6 +208,8 @@ export function AdminTeamsRoute() {
     setSelectedTeamId(null);
     setForm(emptyTeamForm);
     setPlayerSearch('');
+    setTeamSearch('');
+    setSelectedBulkTeamIds([]);
     setLogoFile(null);
     if (logoInputRef.current) {
       logoInputRef.current.value = '';
@@ -308,6 +326,36 @@ export function AdminTeamsRoute() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedBulkTeamIds.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Eliminare ${selectedBulkTeamIds.length.toString()} squadre selezionate?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setFormError(null);
+
+    try {
+      for (const teamId of selectedBulkTeamIds) {
+        await deleteTeamMutation.mutateAsync(teamId);
+      }
+      setSelectedBulkTeamIds([]);
+      if (selectedTeamId && selectedBulkTeamIds.includes(selectedTeamId)) {
+        handleNewTeam();
+      }
+    } catch (error) {
+      setFormError(
+        `Eliminazione non completata. Verifica che la squadra non abbia partite collegate. ${getErrorMessage(error)}`
+      );
+    }
+  };
+
   return (
     <section className={styles.page}>
       <header className={styles.header}>
@@ -345,7 +393,32 @@ export function AdminTeamsRoute() {
       </div>
 
       <div className={styles.layout}>
-        <aside className={styles.panel}>
+        <aside className={cx(styles.panel, styles.listPanel)}>
+          <details className={styles.mobileListDetails} open>
+            <summary>Lista squadre</summary>
+            <div className={styles.listControls}>
+              <label className={styles.field}>
+                <span className={styles.label}>Cerca squadra</span>
+                <input
+                  className={styles.input}
+                  onChange={(event) => {
+                    setTeamSearch(event.target.value);
+                  }}
+                  placeholder="Cerca squadra o giocatore..."
+                  type="search"
+                  value={teamSearch}
+                />
+              </label>
+              <button
+                className={styles.buttonDanger}
+                disabled={isBusy || selectedBulkTeamIds.length === 0}
+                onClick={() => void handleBulkDelete()}
+                type="button"
+              >
+                <FaTrashCan aria-hidden="true" className={styles.buttonIcon} />
+                <span>Elimina selezionate</span>
+              </button>
+            </div>
           <h2 className={styles.panelTitle}>Lista squadre</h2>
           {teamsQuery.isLoading ? <p className={styles.muted}>Caricamento...</p> : null}
           {teamsQuery.isError ? <p className={styles.error}>{getErrorMessage(teamsQuery.error)}</p> : null}
@@ -353,15 +426,30 @@ export function AdminTeamsRoute() {
             <p className={styles.muted}>Nessuna squadra per questo torneo.</p>
           ) : null}
           <ul className={styles.list}>
-            {teams.map((team) => (
+            {filteredTeams.map((team) => (
               <li key={team.id}>
-                <button
-                  className={cx(styles.listButton, team.id === selectedTeamId && styles.listButtonActive)}
-                  onClick={() => {
-                    handleSelectTeam(team);
-                  }}
-                  type="button"
-                >
+                <div className={styles.selectableListItem}>
+                  <label className={styles.bulkCheckbox}>
+                    <input
+                      checked={selectedBulkTeamIds.includes(team.id)}
+                      onChange={(event) => {
+                        setSelectedBulkTeamIds((current) =>
+                          event.target.checked
+                            ? [...current, team.id]
+                            : current.filter((teamId) => teamId !== team.id)
+                        );
+                      }}
+                      type="checkbox"
+                    />
+                    <span className={styles.srOnly}>Seleziona {team.name}</span>
+                  </label>
+                  <button
+                    className={cx(styles.listButton, team.id === selectedTeamId && styles.listButtonActive)}
+                    onClick={() => {
+                      handleSelectTeam(team);
+                    }}
+                    type="button"
+                  >
                   {team.logo_url ? (
                     <img alt="" className={styles.logo} src={team.logo_url} />
                   ) : (
@@ -377,10 +465,12 @@ export function AdminTeamsRoute() {
                         : 'Nessun giocatore'}
                     </small>
                   </span>
-                </button>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
+          </details>
         </aside>
 
         <section className={styles.panel}>

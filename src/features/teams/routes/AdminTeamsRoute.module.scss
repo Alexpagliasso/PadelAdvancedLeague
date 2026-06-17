@@ -50,12 +50,51 @@
   font-size: 1rem;
 }
 
+.srOnly {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.mobileListDetails {
+  display: grid;
+  gap: 1rem;
+}
+
+.mobileListDetails summary {
+  cursor: pointer;
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.listControls {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
 .list {
   display: grid;
   gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.selectableListItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.bulkCheckbox input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--color-primary);
 }
 
 .listButton {
@@ -350,6 +389,10 @@
 
   .playerPicker {
     grid-column: 1 / -1;
+  }
+
+  .mobileListDetails summary {
+    display: none;
   }
 }
 

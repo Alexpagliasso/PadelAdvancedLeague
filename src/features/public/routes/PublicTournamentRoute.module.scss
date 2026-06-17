@@ -19,6 +19,15 @@
   color: var(--pad-public-text);
 }
 
+.srOnly {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .publicThemeLight {
   color-scheme: light;
 }
@@ -339,14 +348,21 @@
   display: grid;
   justify-items: center;
   gap: 0.35rem;
-  color: #ffffff;
+  color: var(--pad-public-navy);
   text-align: center;
 }
 
-.selectionLogo {
-  width: 3.75rem;
-  height: 3.75rem;
-  object-fit: contain;
+.selectionPanel {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 68rem);
+  margin: 0 auto;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 90%);
+  padding: 1rem;
+  box-shadow: 0 1.5rem 3rem rgb(2 11 38 / 24%);
+  backdrop-filter: blur(0.75rem);
 }
 
 .selectionIntroCard h1,
@@ -355,21 +371,37 @@
 }
 
 .selectionIntroCard h1 {
-  color: #ffffff;
+  color: var(--pad-public-navy);
   font-size: clamp(1.45rem, 6vw, 2rem);
   line-height: 1.1;
 }
 
 .selectionIntroCard p {
-  color: #d7f0ff;
+  color: var(--pad-public-muted);
   font-weight: 700;
+}
+
+.selectionSearch input {
+  width: 100%;
+  border: 1px solid var(--pad-public-blue-border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--pad-public-navy);
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 0.75rem 1.5rem rgb(6 26 77 / 10%);
+}
+
+.selectionSearch input:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
 }
 
 .competitionCards {
   display: grid;
   gap: 0.8rem;
-  width: min(100%, 68rem);
-  margin: 0 auto;
+  width: 100%;
 }
 
 .selectionSelect {
@@ -383,7 +415,7 @@
   gap: 0.85rem;
   width: 100%;
   min-height: 5.25rem;
-  border: 1px solid rgb(255 255 255 / 55%);
+  border: 1px solid var(--pad-public-border);
   border-radius: 1.15rem;
   background: rgb(255 255 255 / 92%);
   color: var(--pad-public-text);
@@ -397,6 +429,17 @@
     background 160ms ease,
     box-shadow 160ms ease,
     transform 160ms ease;
+}
+
+.selectionNoResults {
+  margin: 0;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 1rem;
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
+  font-weight: 800;
+  padding: 1rem;
+  text-align: center;
 }
 
 .competitionCard:hover,
@@ -1692,11 +1735,6 @@
 
   .selectionIntroCard {
     margin-bottom: 0.35rem;
-  }
-
-  .selectionLogo {
-    width: 4.25rem;
-    height: 4.25rem;
   }
 
   .competitionCards {

@@ -7,7 +7,6 @@ export const appPaths = {
   adminPlayers: '/admin/players',
   adminMatches: '/admin/matches',
   adminCalendar: '/admin/calendar',
-  adminStandings: '/admin/standings',
   adminSettings: '/admin/settings',
   profile: '/profile'
 } as const;

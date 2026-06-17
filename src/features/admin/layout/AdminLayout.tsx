@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react';
 import type { IconType } from 'react-icons';
 import {
   FaCalendarDays,
-  FaGaugeHigh,
   FaGear,
   FaHouse,
   FaPeopleGroup,
-  FaRankingStar,
   FaRightFromBracket,
-  FaTableList,
   FaTrophy,
   FaUsers
 } from 'react-icons/fa6';
@@ -36,12 +33,6 @@ const navigationItems: NavigationItem[] = [
     variant: 'public'
   },
   {
-    icon: FaGaugeHigh,
-    label: 'Dashboard',
-    to: appPaths.admin,
-    isActive: (pathname) => pathname === appPaths.admin
-  },
-  {
     icon: FaTrophy,
     label: 'Tornei',
     to: appPaths.adminTournaments,
@@ -60,22 +51,11 @@ const navigationItems: NavigationItem[] = [
     isActive: (pathname) => pathname.startsWith(appPaths.adminPlayers)
   },
   {
-    icon: FaTableList,
-    label: 'Partite',
-    to: appPaths.adminMatches,
-    isActive: (pathname) => pathname.startsWith(appPaths.adminMatches)
-  },
-  {
     icon: FaCalendarDays,
     label: 'Calendario',
     to: appPaths.adminCalendar,
-    isActive: (pathname) => pathname.startsWith(appPaths.adminCalendar)
-  },
-  {
-    icon: FaRankingStar,
-    label: 'Classifica',
-    to: appPaths.adminStandings,
-    isActive: (pathname) => pathname.startsWith(appPaths.adminStandings)
+    isActive: (pathname) =>
+      pathname.startsWith(appPaths.adminCalendar) || pathname.startsWith(appPaths.adminMatches)
   },
   {
     icon: FaGear,
@@ -91,7 +71,7 @@ function cx(...classes: (string | undefined | false)[]): string {
 
 function getAdminTitle(pathname: string): string {
   if (pathname === appPaths.admin) {
-    return 'PAD | Dashboard';
+    return 'PAD | Tornei';
   }
 
   if (pathname.startsWith(appPaths.adminTournaments)) {
@@ -110,12 +90,8 @@ function getAdminTitle(pathname: string): string {
     return 'PAD | Calendario';
   }
 
-  if (pathname.startsWith(appPaths.adminStandings)) {
-    return 'PAD | Classifica';
-  }
-
   if (pathname.startsWith(appPaths.adminMatches)) {
-    return 'PAD | Partite';
+    return 'PAD | Calendario';
   }
 
   if (pathname.startsWith(appPaths.adminSettings)) {
