@@ -1,4 +1,10 @@
 import { supabase } from '@/lib/supabase/client';
+import {
+  generateKnockoutBracket,
+  generateRoundRobinCalendar
+} from '@/features/matches/api/matchesApi';
+import type { StandingRow } from '@/features/standings/lib/standingsEngine';
+import { createTeam, type Team } from '@/features/teams/api/teamsApi';
 import type {
   Database,
   SeasonStatus,
@@ -24,6 +30,19 @@ export type CreateTournamentInput = {
   allow_byes: boolean;
   playoff_teams_count: number | null;
   playout_teams_count: number | null;
+};
+
+export type WizardTeamInput = {
+  name: string;
+  slug: string;
+  player_ids: [string, string];
+  ranking: number | null;
+};
+
+export type CreateConfiguredTournamentInput = CreateTournamentInput & {
+  status: TournamentStatus;
+  teams: WizardTeamInput[];
+  split_regular_season_rounds: boolean;
 };
 
 export type UpdateTournamentInput = CreateTournamentInput & {
@@ -136,6 +155,114 @@ export async function createTournament(input: CreateTournamentInput): Promise<To
   }
 
   return data;
+}
+
+function createStandingRowsFromRankedTeams(
+  teams: { ranking: number; team: Team }[]
+): StandingRow[] {
+  return [...teams]
+    .sort((first, second) => first.ranking - second.ranking)
+    .map(({ ranking, team }, index) => ({
+      teamId: team.id,
+      teamName: team.name,
+      position: index + 1,
+      played: 0,
+      wins: 0,
+      losses: 0,
+      setsWon: 0,
+      setsLost: 0,
+      setDiff: 0,
+      gamesWon: 0,
+      gamesLost: 0,
+      gameDiff: 0,
+      points: 0,
+      headToHeadPoints: ranking
+    }));
+}
+
+export async function createConfiguredTournament(
+  input: CreateConfiguredTournamentInput
+): Promise<Tournament> {
+  const { status, teams } = input;
+  const tournamentInput: CreateTournamentInput = {
+    name: input.name,
+    slug: input.slug,
+    description: input.description,
+    is_public: input.is_public,
+    expected_teams_count: input.expected_teams_count,
+    format: input.format,
+    allow_byes: input.allow_byes,
+    playoff_teams_count: input.playoff_teams_count,
+    playout_teams_count: input.playout_teams_count
+  };
+  const tournament = await createTournament(tournamentInput);
+
+  try {
+    if (status !== 'draft') {
+      await updateTournamentStatus(tournament.id, status);
+    }
+
+    const seasons = await listSeasonsByTournament(tournament.id);
+    const mainSeason = seasons.find((season) => season.slug === 'main') ?? seasons[0] ?? null;
+
+    if (!mainSeason) {
+      throw new Error('Season principale non trovata per il torneo appena creato.');
+    }
+
+    const createdTeams: Team[] = [];
+    const rankedTeams: { ranking: number; team: Team }[] = [];
+
+    for (const [index, teamInput] of teams.entries()) {
+      const createdTeam = await createTeam({
+        season_id: mainSeason.id,
+        name: teamInput.name,
+        slug: teamInput.slug,
+        logo_url: null,
+        player_ids: teamInput.player_ids
+      });
+
+      createdTeams.push(createdTeam);
+
+      if (teamInput.ranking !== null) {
+        rankedTeams.push({ ranking: teamInput.ranking, team: createdTeam });
+      } else {
+        rankedTeams.push({ ranking: index + 1, team: createdTeam });
+      }
+    }
+
+    if (tournamentInput.format === 'round_robin' || tournamentInput.format === 'group_playoff_playout') {
+      await generateRoundRobinCalendar(
+        mainSeason.id,
+        createdTeams.map((team) => team.id)
+      );
+
+      const { error: updateError } = await supabase
+        .from('tournaments')
+        .update({
+          current_phase: 'regular_season',
+          regular_calendar_generated_at: new Date().toISOString()
+        })
+        .eq('id', tournament.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+    }
+
+    if (tournamentInput.format === 'knockout') {
+      await generateKnockoutBracket({
+        tournamentId: tournament.id,
+        seasonId: mainSeason.id,
+        standings: createStandingRowsFromRankedTeams(rankedTeams),
+        allowByes: tournamentInput.allow_byes
+      });
+    }
+
+    return tournament;
+  } catch (error) {
+    await deleteTournament(tournament.id);
+    throw error;
+  }
 }
 
 export async function updateTournament(input: UpdateTournamentInput): Promise<Tournament> {

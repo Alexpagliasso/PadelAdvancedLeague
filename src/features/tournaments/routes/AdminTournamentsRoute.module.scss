@@ -191,6 +191,115 @@
   padding: 0.65rem 0.75rem;
 }
 
+.wizard {
+  display: grid;
+  gap: 1rem;
+}
+
+.wizardSteps {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(4.5rem, 1fr));
+  gap: 0.45rem;
+  overflow-x: auto;
+  margin: 0;
+  padding: 0.15rem 0 0.45rem;
+  list-style: none;
+}
+
+.wizardStep {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: center;
+  min-width: 4.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-page);
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.35rem 0.55rem;
+}
+
+.wizardStep span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+
+.wizardStep strong {
+  white-space: nowrap;
+}
+
+.wizardStepActive {
+  border-color: var(--pad-orange-border);
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy);
+}
+
+.wizardStepActive span,
+.wizardStepDone span {
+  background: var(--pad-navy);
+  color: #ffffff;
+}
+
+.wizardStepDone {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.wizardCard {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-page);
+  padding: 1rem;
+}
+
+.wizardTeams {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.wizardTeamCard {
+  display: grid;
+  gap: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  background: var(--color-surface);
+  padding: 0.85rem;
+}
+
+.wizardTeamCard h3,
+.wizardSummary h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.wizardSummary {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.wizardSummary p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.wizardActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -300,23 +409,83 @@
 
 .bracketMatch {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.65rem;
+  border-radius: 0.8rem;
   background: var(--color-surface);
-  padding: 0.7rem;
+  padding: 0.8rem;
 }
 
 .bracketMatch div {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
 .bracketMatch span {
   color: var(--color-muted);
   font-size: 0.8rem;
+}
+
+.bracketMatchBye {
+  border-color: var(--pad-orange-border);
+  background: var(--pad-orange-soft);
+}
+
+.bracketMatchMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.bracketMatchCode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  border-radius: 999px;
+  background: var(--pad-navy);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.45rem;
+}
+
+.bracketBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.22rem 0.5rem;
+}
+
+.bracketBadgeBye {
+  border: 1px solid var(--pad-orange-border);
+  background: var(--pad-orange-soft);
+  color: var(--pad-navy);
+}
+
+.bracketBadgeReady {
+  background: var(--pad-navy);
+  color: #ffffff;
+}
+
+.bracketBadgePending {
+  background: var(--pad-orange);
+  color: #ffffff;
+}
+
+.bracketMatch .bracketBadgeBye {
+  color: var(--pad-navy);
+}
+
+.bracketMatch .bracketBadgeReady,
+.bracketMatch .bracketBadgePending {
+  color: #ffffff;
 }
 
 .inlineLink {
@@ -551,6 +720,10 @@
   .configGrid,
   .finalPhaseSummary {
     grid-template-columns: 1fr;
+  }
+
+  .wizardCard {
+    padding: 0.85rem;
   }
 
   .header,

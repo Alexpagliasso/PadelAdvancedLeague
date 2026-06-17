@@ -7,6 +7,11 @@ import {
   useMatchesBySeasonQuery,
   useTournamentBracketsQuery
 } from '@/features/matches/api/matchesQueries';
+import {
+  createBracketSourceMap,
+  getBracketMatchCode,
+  getBracketSlotLabel
+} from '@/features/matches/lib/bracketDisplay';
 import { formatMatchDate } from '@/features/matches/lib/matchDateTime';
 import { getUniqueMatchesByFixture, isMatchPlayed } from '@/features/matches/lib/matchStatus';
 import { usePlayersQuery } from '@/features/players/api/playersQueries';
@@ -17,12 +22,17 @@ import {
 } from '@/features/teams/api/teamsQueries';
 import {
   useAdminTournamentsQuery,
+  useCreateConfiguredTournamentMutation,
   useCreateTournamentMutation,
   useDeleteTournamentMutation,
   useUpdateTournamentMutation,
   useUpdateTournamentStatusMutation
 } from '@/features/tournaments/api/tournamentsQueries';
-import type { TournamentWithSeasons } from '@/features/tournaments/api/tournamentsApi';
+import type { Player } from '@/features/players/api/playersApi';
+import type {
+  CreateConfiguredTournamentInput,
+  TournamentWithSeasons
+} from '@/features/tournaments/api/tournamentsApi';
 import {
   competitionPhaseLabels,
   tournamentFormatDescriptions,
@@ -59,6 +69,20 @@ type QuickTeamFormState = {
   playerTwoId: string;
 };
 
+type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
+
+type WizardTeamState = {
+  name: string;
+  playerOneId: string;
+  playerTwoId: string;
+  ranking: string;
+};
+
+type TournamentWizardState = TournamentFormState & {
+  splitRegularSeasonRounds: boolean;
+  teams: WizardTeamState[];
+};
+
 const emptyTournamentForm: TournamentFormState = {
   name: '',
   slug: '',
@@ -78,6 +102,23 @@ const emptyQuickTeamForm: QuickTeamFormState = {
   playerOneId: '',
   playerTwoId: ''
 };
+
+function createEmptyWizardTeams(count: number): WizardTeamState[] {
+  return Array.from({ length: count }, () => ({
+    name: '',
+    playerOneId: '',
+    playerTwoId: '',
+    ranking: ''
+  }));
+}
+
+function createEmptyWizardState(): TournamentWizardState {
+  return {
+    ...emptyTournamentForm,
+    splitRegularSeasonRounds: true,
+    teams: createEmptyWizardTeams(2)
+  };
+}
 
 function slugify(value: string): string {
   return value
@@ -161,6 +202,10 @@ function parseOptionalPositiveInteger(value: string, label: string): number | nu
 
 function cx(...classes: (string | undefined | false)[]): string {
   return classes.filter(Boolean).join(' ');
+}
+
+function getPlayerLabel(player: Player): string {
+  return player.display_name || `${player.first_name} ${player.last_name}`.trim();
 }
 
 function tournamentToForm(tournament: TournamentWithSeasons | null): TournamentFormState {
@@ -274,6 +319,7 @@ export function AdminTournamentsRoute() {
   const tournamentsQuery = useAdminTournamentsQuery();
   const playersQuery = usePlayersQuery();
   const createTournamentMutation = useCreateTournamentMutation();
+  const createConfiguredTournamentMutation = useCreateConfiguredTournamentMutation();
   const updateTournamentMutation = useUpdateTournamentMutation();
   const updateTournamentStatusMutation = useUpdateTournamentStatusMutation();
   const deleteTournamentMutation = useDeleteTournamentMutation();
@@ -281,6 +327,8 @@ export function AdminTournamentsRoute() {
 
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const [tournamentForm, setTournamentForm] = useState<TournamentFormState>(emptyTournamentForm);
+  const [wizardForm, setWizardForm] = useState<TournamentWizardState>(createEmptyWizardState);
+  const [wizardStep, setWizardStep] = useState<WizardStep>(1);
   const [quickTeamForm, setQuickTeamForm] = useState<QuickTeamFormState>(emptyQuickTeamForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [teamFormError, setTeamFormError] = useState<string | null>(null);
@@ -380,6 +428,7 @@ export function AdminTournamentsRoute() {
 
   const isBusy =
     createTournamentMutation.isPending ||
+    createConfiguredTournamentMutation.isPending ||
     updateTournamentMutation.isPending ||
     updateTournamentStatusMutation.isPending ||
     deleteTournamentMutation.isPending ||
@@ -404,6 +453,8 @@ export function AdminTournamentsRoute() {
     didAutoSelectTournament.current = true;
     setSelectedTournamentId(null);
     setTournamentForm(emptyTournamentForm);
+    setWizardForm(createEmptyWizardState());
+    setWizardStep(1);
     setQuickTeamForm(emptyQuickTeamForm);
     setFormError(null);
     setTeamFormError(null);
@@ -416,7 +467,7 @@ export function AdminTournamentsRoute() {
 
   const getTeamName = (teamId: string | null): string => {
     if (!teamId) {
-      return 'Bye';
+      return 'In attesa vincitore';
     }
 
     return teams.find((team) => team.id === teamId)?.name ?? 'Squadra';
@@ -546,6 +597,22 @@ export function AdminTournamentsRoute() {
     }
   };
 
+  const handleCreateConfiguredTournament = async (
+    input: Parameters<typeof createConfiguredTournamentMutation.mutateAsync>[0]
+  ) => {
+    setFormError(null);
+
+    try {
+      const createdTournament = await createConfiguredTournamentMutation.mutateAsync(input);
+      didAutoSelectTournament.current = true;
+      setSelectedTournamentId(createdTournament.id);
+      setWizardForm(createEmptyWizardState());
+      setWizardStep(1);
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    }
+  };
+
   return (
     <section className={styles.page}>
       <header className={styles.header}>
@@ -598,6 +665,7 @@ export function AdminTournamentsRoute() {
           <h2 className={styles.panelTitle}>
             {selectedTournament ? 'Modifica torneo' : 'Crea torneo'}
           </h2>
+          {selectedTournament ? (
           <form className={styles.form} onSubmit={(event) => void handleSubmitTournament(event)}>
             <div className={styles.grid}>
               <label className={styles.field}>
@@ -802,39 +870,46 @@ export function AdminTournamentsRoute() {
                 <FaFloppyDisk aria-hidden="true" className={styles.buttonIcon} />
                 <span>Salva torneo</span>
               </button>
-              {selectedTournament ? (
-                <>
-                  <button
-                    className={styles.buttonSecondary}
-                    disabled={isBusy || selectedTournament.status === 'active'}
-                    onClick={() => void handleStatusChange('active')}
-                    type="button"
-                  >
-                    <FaPenToSquare aria-hidden="true" className={styles.buttonIcon} />
-                    <span>Attiva</span>
-                  </button>
-                  <button
-                    className={styles.buttonSecondary}
-                    disabled={isBusy || selectedTournament.status === 'draft'}
-                    onClick={() => void handleStatusChange('draft')}
-                    type="button"
-                  >
-                    <FaPenToSquare aria-hidden="true" className={styles.buttonIcon} />
-                    <span>Disattiva</span>
-                  </button>
-                  <button
-                    className={styles.buttonDanger}
-                    disabled={isBusy}
-                    onClick={() => void handleDeleteTournament()}
-                    type="button"
-                  >
-                    <FaTrashCan aria-hidden="true" className={styles.buttonIcon} />
-                    <span>Elimina</span>
-                  </button>
-                </>
-              ) : null}
+              <button
+                className={styles.buttonSecondary}
+                disabled={isBusy || selectedTournament.status === 'active'}
+                onClick={() => void handleStatusChange('active')}
+                type="button"
+              >
+                <FaPenToSquare aria-hidden="true" className={styles.buttonIcon} />
+                <span>Attiva</span>
+              </button>
+              <button
+                className={styles.buttonSecondary}
+                disabled={isBusy || selectedTournament.status === 'draft'}
+                onClick={() => void handleStatusChange('draft')}
+                type="button"
+              >
+                <FaPenToSquare aria-hidden="true" className={styles.buttonIcon} />
+                <span>Disattiva</span>
+              </button>
+              <button
+                className={styles.buttonDanger}
+                disabled={isBusy}
+                onClick={() => void handleDeleteTournament()}
+                type="button"
+              >
+                <FaTrashCan aria-hidden="true" className={styles.buttonIcon} />
+                <span>Elimina</span>
+              </button>
             </div>
           </form>
+          ) : (
+            <TournamentCreationWizard
+              form={wizardForm}
+              isBusy={isBusy}
+              onChange={setWizardForm}
+              onSubmit={(input) => void handleCreateConfiguredTournament(input)}
+              players={players}
+              setStep={setWizardStep}
+              step={wizardStep}
+            />
+          )}
 
           {selectedTournament ? (
             <div className={styles.detailBlock}>
@@ -953,6 +1028,7 @@ export function AdminTournamentsRoute() {
                     {brackets
                       .filter((bracket) => bracket.bracket_type !== 'knockout')
                       .map((bracket) => {
+                        const sourceMap = createBracketSourceMap(bracket.bracketMatches);
                         const roundLabels = Array.from(
                           new Set(
                             bracket.bracketMatches.map(
@@ -982,24 +1058,66 @@ export function AdminTournamentsRoute() {
                                         matches.find(
                                           (match) => match.id === bracketMatch.match_id
                                         ) ?? null;
+                                      const matchCode = getBracketMatchCode(
+                                        bracketMatch.round_label,
+                                        bracketMatch.position
+                                      );
+                                      const homeLabel = getBracketSlotLabel({
+                                        bracketMatch,
+                                        getTeamLabel: getTeamName,
+                                        slot: 'home',
+                                        sourceMap
+                                      });
+                                      const awayLabel = getBracketSlotLabel({
+                                        bracketMatch,
+                                        getTeamLabel: getTeamName,
+                                        slot: 'away',
+                                        sourceMap
+                                      });
+                                      const bracketMatchClassName = [
+                                        styles.bracketMatch,
+                                        bracketMatch.is_bye ? styles.bracketMatchBye : null
+                                      ]
+                                        .filter(Boolean)
+                                        .join(' ');
+                                      const bracketBadgeClassName = [
+                                        styles.bracketBadge,
+                                        bracketMatch.is_bye
+                                          ? styles.bracketBadgeBye
+                                          : linkedMatch
+                                            ? styles.bracketBadgeReady
+                                            : styles.bracketBadgePending
+                                      ]
+                                        .filter(Boolean)
+                                        .join(' ');
 
                                       return (
                                         <article
-                                          className={styles.bracketMatch}
+                                          className={bracketMatchClassName}
                                           key={bracketMatch.id}
                                         >
                                           <div>
-                                            <strong>
-                                              {getTeamName(bracketMatch.home_team_id)} vs{' '}
-                                              {getTeamName(bracketMatch.away_team_id)}
-                                            </strong>
-                                            <span>
-                                              {bracketMatch.is_bye
-                                                ? 'Bye'
-                                                : linkedMatch
-                                                  ? getMatchStatusLabel(linkedMatch.status)
-                                                  : 'Da disputare'}
+                                            <span className={styles.bracketMatchMeta}>
+                                              <strong className={styles.bracketMatchCode}>
+                                                {matchCode}
+                                              </strong>
+                                              <span className={bracketBadgeClassName}>
+                                                {bracketMatch.is_bye
+                                                  ? 'Bye'
+                                                  : linkedMatch
+                                                    ? getMatchStatusLabel(linkedMatch.status)
+                                                    : 'Da disputare'}
+                                              </span>
                                             </span>
+                                            <strong>
+                                              {homeLabel} vs {awayLabel}
+                                            </strong>
+                                            {!linkedMatch && !bracketMatch.is_bye ? (
+                                              <span>In attesa che si completi il turno precedente</span>
+                                            ) : null}
+                                            {bracketMatch.is_bye ? (
+                                              <span>Squadra qualificata al turno successivo</span>
+                                            ) : null}
                                           </div>
                                           {bracketMatch.match_id ? (
                                             <Link
@@ -1208,5 +1326,602 @@ export function AdminTournamentsRoute() {
         </section>
       </div>
     </section>
+  );
+}
+
+function TournamentCreationWizard({
+  form,
+  isBusy,
+  onChange,
+  onSubmit,
+  players,
+  setStep,
+  step
+}: {
+  form: TournamentWizardState;
+  isBusy: boolean;
+  onChange: (form: TournamentWizardState | ((current: TournamentWizardState) => TournamentWizardState)) => void;
+  onSubmit: (input: CreateConfiguredTournamentInput) => void;
+  players: Player[];
+  setStep: (step: WizardStep) => void;
+  step: WizardStep;
+}) {
+  const [wizardError, setWizardError] = useState<string | null>(null);
+  const selectedPlayerIds = form.teams.flatMap((team) =>
+    [team.playerOneId, team.playerTwoId].filter(Boolean)
+  );
+  const expectedTeamsCount = Number(form.expectedTeamsCount) || 0;
+  const stepItems: { id: WizardStep; label: string }[] = [
+    { id: 1, label: 'Dati' },
+    { id: 2, label: 'Formula' },
+    { id: 3, label: 'Config' },
+    { id: 4, label: 'Squadre' },
+    { id: 5, label: 'Genera' },
+    { id: 6, label: 'Riepilogo' }
+  ];
+
+  const updateForm = (updater: (current: TournamentWizardState) => TournamentWizardState) => {
+    onChange(updater);
+  };
+
+  const resizeTeams = (count: number) => {
+    updateForm((current) => {
+      const nextTeams = [...current.teams];
+
+      while (nextTeams.length < count) {
+        nextTeams.push({ name: '', playerOneId: '', playerTwoId: '', ranking: '' });
+      }
+
+      return {
+        ...current,
+        teams: nextTeams.slice(0, count)
+      };
+    });
+  };
+
+  const getAvailablePlayers = (teamIndex: number, slot: 'one' | 'two') => {
+    const currentTeam = form.teams[teamIndex];
+    const currentPlayerId = slot === 'one' ? currentTeam?.playerOneId : currentTeam?.playerTwoId;
+    const otherCurrentPlayerId = slot === 'one' ? currentTeam?.playerTwoId : currentTeam?.playerOneId;
+
+    return players.filter((player) => {
+      if (player.id === currentPlayerId) {
+        return true;
+      }
+
+      if (player.id === otherCurrentPlayerId) {
+        return false;
+      }
+
+      return !selectedPlayerIds.includes(player.id);
+    });
+  };
+
+  const getPlayerNameById = (playerId: string): string => {
+    const player = players.find((item) => item.id === playerId);
+    return player ? getPlayerLabel(player) : 'Giocatore';
+  };
+
+  const validateCurrentStep = (): CreateConfiguredTournamentInput | null => {
+    if (step === 1) {
+      const expectedCount = parseRequiredPositiveInteger(
+        form.expectedTeamsCount,
+        'Il numero partecipanti'
+      );
+
+      if (!form.name.trim()) {
+        throw new Error('Inserisci il nome del torneo.');
+      }
+
+      if (expectedCount < 2) {
+        throw new Error('Il torneo deve avere almeno 2 partecipanti.');
+      }
+    }
+
+    if (step === 2) {
+      const expectedCount = parseRequiredPositiveInteger(
+        form.expectedTeamsCount,
+        'Il numero partecipanti'
+      );
+
+      if (expectedCount < 2) {
+        throw new Error('Il torneo deve avere almeno 2 partecipanti.');
+      }
+    }
+
+    if (step === 3) {
+      normalizeCompetitionSettings(form);
+    }
+
+    if (step === 4 || step === 6) {
+      const settings = normalizeCompetitionSettings(form);
+
+      if (form.teams.length !== settings.expected_teams_count) {
+        throw new Error('Il numero di squadre deve corrispondere ai partecipanti previsti.');
+      }
+
+      const usedPlayers = new Set<string>();
+      const usedRankings = new Set<number>();
+
+      form.teams.forEach((team, index) => {
+        if (!team.playerOneId || !team.playerTwoId) {
+          throw new Error(`Completa i 2 giocatori della squadra ${String(index + 1)}.`);
+        }
+
+        if (team.playerOneId === team.playerTwoId) {
+          throw new Error(`La squadra ${String(index + 1)} usa due volte lo stesso giocatore.`);
+        }
+
+        [team.playerOneId, team.playerTwoId].forEach((playerId) => {
+          if (usedPlayers.has(playerId)) {
+            throw new Error('Un giocatore può appartenere a una sola squadra nel torneo.');
+          }
+
+          usedPlayers.add(playerId);
+        });
+
+        if (settings.format === 'knockout') {
+          const ranking = Number(team.ranking);
+
+          if (!Number.isInteger(ranking) || ranking < 1 || ranking > settings.expected_teams_count) {
+            throw new Error(`Inserisci un ranking valido per la squadra ${String(index + 1)}.`);
+          }
+
+          if (usedRankings.has(ranking)) {
+            throw new Error('Il ranking deve essere univoco per torneo.');
+          }
+
+          usedRankings.add(ranking);
+        }
+      });
+    }
+
+    if (step < 6) {
+      return null;
+    }
+
+    const settings = normalizeCompetitionSettings(form);
+    const normalizedTeams = form.teams.map((team, index) => {
+      const fallbackName = `${getPlayerNameById(team.playerOneId)} / ${getPlayerNameById(team.playerTwoId)}`;
+      const name = team.name.trim() || fallbackName;
+
+      return {
+        name,
+        slug: slugify(name) || `squadra-${String(index + 1)}`,
+        player_ids: [team.playerOneId, team.playerTwoId] as [string, string],
+        ranking: settings.format === 'knockout' ? Number(team.ranking) : null
+      };
+    });
+
+    return {
+      name: form.name.trim(),
+      slug: form.slug.trim() || slugify(form.name),
+      description: form.description.trim() || null,
+      is_public: form.isPublic,
+      status: form.status,
+      split_regular_season_rounds: form.splitRegularSeasonRounds,
+      teams: normalizedTeams,
+      ...settings
+    };
+  };
+
+  const goNext = () => {
+    setWizardError(null);
+
+    try {
+      validateCurrentStep();
+      setStep(Math.min(step + 1, 6) as WizardStep);
+    } catch (error) {
+      setWizardError(getErrorMessage(error));
+    }
+  };
+
+  const goBack = () => {
+    setWizardError(null);
+    setStep(Math.max(step - 1, 1) as WizardStep);
+  };
+
+  const handleSubmit = () => {
+    setWizardError(null);
+
+    try {
+      validateCurrentStep();
+      const input = validateCurrentStep();
+
+      if (input) {
+        onSubmit(input);
+      }
+    } catch (error) {
+      setWizardError(getErrorMessage(error));
+    }
+  };
+
+  return (
+    <div className={styles.wizard}>
+      <ol className={styles.wizardSteps} aria-label="Step creazione torneo">
+        {stepItems.map((item) => (
+          <li
+            className={cx(
+              styles.wizardStep,
+              item.id === step && styles.wizardStepActive,
+              item.id < step && styles.wizardStepDone
+            )}
+            key={item.id}
+          >
+            <span>{item.id}</span>
+            <strong>{item.label}</strong>
+          </li>
+        ))}
+      </ol>
+
+      {wizardError ? <p className={styles.error}>{wizardError}</p> : null}
+
+      <div className={styles.wizardCard}>
+        {step === 1 ? (
+          <div className={styles.form}>
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                <span className={styles.label}>Nome torneo</span>
+                <input
+                  className={styles.input}
+                  onBlur={() => {
+                    if (!form.slug) {
+                      updateForm((current) => ({ ...current, slug: slugify(current.name) }));
+                    }
+                  }}
+                  onChange={(event) => {
+                    updateForm((current) => ({ ...current, name: event.target.value }));
+                  }}
+                  value={form.name}
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.label}>Numero partecipanti</span>
+                <input
+                  className={styles.input}
+                  min={2}
+                  onChange={(event) => {
+                    const count = Math.max(Number(event.target.value) || 0, 0);
+                    updateForm((current) => ({
+                      ...current,
+                      expectedTeamsCount: event.target.value
+                    }));
+
+                    if (count >= 0) {
+                      resizeTeams(count);
+                    }
+                  }}
+                  type="number"
+                  value={form.expectedTeamsCount}
+                />
+              </label>
+            </div>
+
+            <label className={styles.field}>
+              <span className={styles.label}>Descrizione</span>
+              <textarea
+                className={styles.textarea}
+                onChange={(event) => {
+                  updateForm((current) => ({ ...current, description: event.target.value }));
+                }}
+                value={form.description}
+              />
+            </label>
+
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                <span className={styles.label}>Stato</span>
+                <select
+                  className={styles.select}
+                  onChange={(event) => {
+                    updateForm((current) => ({
+                      ...current,
+                      status: event.target.value as TournamentStatus
+                    }));
+                  }}
+                  value={form.status}
+                >
+                  <option value="draft">Bozza</option>
+                  <option value="active">Attivo</option>
+                  <option value="archived">Archiviato</option>
+                </select>
+              </label>
+
+              <label className={styles.checkboxRow}>
+                <input
+                  checked={form.isPublic}
+                  onChange={(event) => {
+                    updateForm((current) => ({ ...current, isPublic: event.target.checked }));
+                  }}
+                  type="checkbox"
+                />
+                Pubblicato
+              </label>
+            </div>
+          </div>
+        ) : null}
+
+        {step === 2 ? (
+          <div className={styles.radioCards}>
+            {tournamentFormatOptions.map((format) => (
+              <label
+                className={cx(styles.radioCard, form.format === format && styles.radioCardActive)}
+                key={format}
+              >
+                <input
+                  checked={form.format === format}
+                  name="wizard-format"
+                  onChange={() => {
+                    updateForm((current) => ({
+                      ...current,
+                      format,
+                      allowByes: format === 'round_robin' ? false : current.allowByes,
+                      playoffTeamsCount: format === 'group_playoff_playout' ? current.playoffTeamsCount : '',
+                      playoutTeamsCount: format === 'group_playoff_playout' ? current.playoutTeamsCount : ''
+                    }));
+                  }}
+                  type="radio"
+                />
+                <span>
+                  <strong>
+                    {format === 'group_playoff_playout'
+                      ? 'Girone + eliminazione diretta'
+                      : tournamentFormatLabels[format]}
+                  </strong>
+                  <small>{tournamentFormatDescriptions[format]}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        ) : null}
+
+        {step === 3 ? (
+          <div className={styles.form}>
+            {form.format === 'round_robin' || form.format === 'group_playoff_playout' ? (
+              <label className={styles.checkboxRow}>
+                <input
+                  checked={form.splitRegularSeasonRounds}
+                  onChange={(event) => {
+                    updateForm((current) => ({
+                      ...current,
+                      splitRegularSeasonRounds: event.target.checked
+                    }));
+                  }}
+                  type="checkbox"
+                />
+                Suddividi il girone per giornate
+              </label>
+            ) : null}
+
+            {form.format !== 'round_robin' ? (
+              <label className={styles.checkboxRow}>
+                <input
+                  checked={form.allowByes}
+                  onChange={(event) => {
+                    updateForm((current) => ({ ...current, allowByes: event.target.checked }));
+                  }}
+                  type="checkbox"
+                />
+                Consenti bye automatici
+              </label>
+            ) : null}
+
+            {form.format === 'group_playoff_playout' ? (
+              <div className={styles.grid}>
+                <label className={styles.field}>
+                  <span className={styles.label}>Squadre playoff</span>
+                  <input
+                    className={styles.input}
+                    min={2}
+                    onChange={(event) => {
+                      updateForm((current) => ({
+                        ...current,
+                        playoffTeamsCount: event.target.value
+                      }));
+                    }}
+                    type="number"
+                    value={form.playoffTeamsCount}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Squadre playout</span>
+                  <input
+                    className={styles.input}
+                    min={2}
+                    onChange={(event) => {
+                      updateForm((current) => ({
+                        ...current,
+                        playoutTeamsCount: event.target.value
+                      }));
+                    }}
+                    type="number"
+                    value={form.playoutTeamsCount}
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {step === 4 ? (
+          <div className={styles.wizardTeams}>
+            {form.teams.map((team, teamIndex) => (
+              <section className={styles.wizardTeamCard} key={teamIndex}>
+                <h3>Squadra {teamIndex + 1}</h3>
+                <div className={styles.grid}>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Nome squadra opzionale</span>
+                    <input
+                      className={styles.input}
+                      onChange={(event) => {
+                        updateForm((current) => ({
+                          ...current,
+                          teams: current.teams.map((item, index) =>
+                            index === teamIndex ? { ...item, name: event.target.value } : item
+                          )
+                        }));
+                      }}
+                      placeholder="Vuoto = nomi giocatori"
+                      value={team.name}
+                    />
+                  </label>
+
+                  {form.format === 'knockout' ? (
+                    <label className={styles.field}>
+                      <span className={styles.label}>Ranking</span>
+                      <input
+                        className={styles.input}
+                        min={1}
+                        onChange={(event) => {
+                          updateForm((current) => ({
+                            ...current,
+                            teams: current.teams.map((item, index) =>
+                              index === teamIndex ? { ...item, ranking: event.target.value } : item
+                            )
+                          }));
+                        }}
+                        type="number"
+                        value={team.ranking}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+
+                <div className={styles.grid}>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Giocatore 1</span>
+                    <select
+                      className={styles.select}
+                      onChange={(event) => {
+                        updateForm((current) => ({
+                          ...current,
+                          teams: current.teams.map((item, index) =>
+                            index === teamIndex
+                              ? { ...item, playerOneId: event.target.value }
+                              : item
+                          )
+                        }));
+                      }}
+                      value={team.playerOneId}
+                    >
+                      <option value="">Seleziona giocatore</option>
+                      {getAvailablePlayers(teamIndex, 'one').map((player) => (
+                        <option key={player.id} value={player.id}>
+                          {getPlayerLabel(player)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={styles.field}>
+                    <span className={styles.label}>Giocatore 2</span>
+                    <select
+                      className={styles.select}
+                      onChange={(event) => {
+                        updateForm((current) => ({
+                          ...current,
+                          teams: current.teams.map((item, index) =>
+                            index === teamIndex
+                              ? { ...item, playerTwoId: event.target.value }
+                              : item
+                          )
+                        }));
+                      }}
+                      value={team.playerTwoId}
+                    >
+                      <option value="">Seleziona giocatore</option>
+                      {getAvailablePlayers(teamIndex, 'two').map((player) => (
+                        <option key={player.id} value={player.id}>
+                          {getPlayerLabel(player)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : null}
+
+        {step === 5 ? (
+          <div className={styles.wizardSummary}>
+            <h3>Generazione automatica</h3>
+            {form.format === 'round_robin' ? (
+              <p>
+                Verrà generato un calendario girone all’italiana con una partita tra ogni coppia
+                di squadre.
+              </p>
+            ) : null}
+            {form.format === 'knockout' ? (
+              <p>
+                Verrà generato subito il tabellone a eliminazione diretta usando il ranking come
+                seed. I match reali saranno creati quando entrambe le squadre sono note.
+              </p>
+            ) : null}
+            {form.format === 'group_playoff_playout' ? (
+              <p>
+                Verrà generato solo il calendario del girone. Playoff e playout saranno disponibili
+                dopo il completamento di tutte le partite del girone.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {step === 6 ? (
+          <div className={styles.wizardSummary}>
+            <h3>Riepilogo</h3>
+            <dl className={styles.configGrid}>
+              <div>
+                <dt>Torneo</dt>
+                <dd>{form.name || '-'}</dd>
+              </div>
+              <div>
+                <dt>Formula</dt>
+                <dd>
+                  {form.format === 'group_playoff_playout'
+                    ? 'Girone + eliminazione diretta'
+                    : tournamentFormatLabels[form.format]}
+                </dd>
+              </div>
+              <div>
+                <dt>Squadre</dt>
+                <dd>{expectedTeamsCount}</dd>
+              </div>
+              <div>
+                <dt>Stato</dt>
+                <dd>{getTournamentStatusLabel(form.status)}</dd>
+              </div>
+              <div>
+                <dt>Pubblicato</dt>
+                <dd>{form.isPublic ? 'Si' : 'No'}</dd>
+              </div>
+            </dl>
+          </div>
+        ) : null}
+      </div>
+
+      <div className={styles.wizardActions}>
+        <button
+          className={styles.buttonSecondary}
+          disabled={isBusy || step === 1}
+          onClick={goBack}
+          type="button"
+        >
+          Indietro
+        </button>
+        {step < 6 ? (
+          <button className={styles.button} disabled={isBusy} onClick={goNext} type="button">
+            Avanti
+          </button>
+        ) : (
+          <button className={styles.button} disabled={isBusy} onClick={handleSubmit} type="button">
+            <FaFloppyDisk aria-hidden="true" className={styles.buttonIcon} />
+            <span>Salva e genera</span>
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

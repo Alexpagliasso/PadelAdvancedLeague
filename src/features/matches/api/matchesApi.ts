@@ -175,20 +175,34 @@ function isCompletedMatch(match: MatchWithSets): boolean {
   );
 }
 
-function getFirstRoundLabel(bracketSize: number): string {
-  if (bracketSize <= 2) {
+function getRoundLabel(bracketSize: number, roundNumber: number): string {
+  const remainingTeams = bracketSize / 2 ** (roundNumber - 1);
+
+  if (remainingTeams <= 2) {
     return 'Finale';
   }
 
-  if (bracketSize === 4) {
+  if (remainingTeams === 4) {
     return 'Semifinale';
   }
 
-  if (bracketSize === 8) {
+  if (remainingTeams === 8) {
     return 'Quarti';
   }
 
-  return 'Turno 1';
+  return `Turno ${roundNumber.toString()}`;
+}
+
+export function getMatchWinnerTeamId(match: Match): string | null {
+  if (match.home_sets_won > match.away_sets_won) {
+    return match.home_team_id;
+  }
+
+  if (match.away_sets_won > match.home_sets_won) {
+    return match.away_team_id;
+  }
+
+  return null;
 }
 
 export async function listMatchesBySeason(seasonId: string): Promise<MatchWithSets[]> {
@@ -329,6 +343,10 @@ export async function updateMatch(input: UpdateMatchInput): Promise<Match> {
 
   await replaceMatchSets(input.id, input.sets);
 
+  if (resultSummary && (data.phase === 'playoff' || data.phase === 'playout')) {
+    await updateBracketWinner(data);
+  }
+
   return data;
 }
 
@@ -353,6 +371,10 @@ export async function resetMatchResult(id: string): Promise<Match> {
 
   if (error) {
     throw error;
+  }
+
+  if (data.phase === 'playoff' || data.phase === 'playout') {
+    await clearBracketWinner(data.id);
   }
 
   return data;
@@ -520,17 +542,222 @@ function getExistingGeneratedTypes(
   return generatedTypes;
 }
 
+function getAdvancementMappings(currentRoundSize: number): {
+  fromPosition: number;
+  slot: 'home' | 'away';
+  toPosition: number;
+}[] {
+  const mappings: {
+    fromPosition: number;
+    slot: 'home' | 'away';
+    toPosition: number;
+  }[] = [];
+
+  for (let index = 0; index < currentRoundSize / 2; index += 1) {
+    mappings.push({
+      fromPosition: index + 1,
+      toPosition: index + 1,
+      slot: 'home'
+    });
+    mappings.push({
+      fromPosition: currentRoundSize - index,
+      toPosition: index + 1,
+      slot: 'away'
+    });
+  }
+
+  return mappings;
+}
+
+async function createKnockoutMatchIfReady(
+  bracketMatchId: string,
+  seasonId: string,
+  phase: Extract<MatchPhase, 'playoff' | 'playout'>
+): Promise<number> {
+  const { data: bracketMatch, error: bracketMatchError } = await supabase
+    .from('tournament_bracket_matches')
+    .select('*')
+    .eq('id', bracketMatchId)
+    .single();
+
+  if (bracketMatchError) {
+    throw bracketMatchError;
+  }
+
+  if (
+    bracketMatch.match_id ||
+    bracketMatch.is_bye ||
+    !bracketMatch.home_team_id ||
+    !bracketMatch.away_team_id
+  ) {
+    return 0;
+  }
+
+  if (bracketMatch.home_team_id === bracketMatch.away_team_id) {
+    return 0;
+  }
+
+  const { data: match, error: matchError } = await supabase
+    .from('matches')
+    .insert({
+      season_id: seasonId,
+      phase,
+      home_team_id: bracketMatch.home_team_id,
+      away_team_id: bracketMatch.away_team_id,
+      scheduled_at: null,
+      venue: null,
+      status: 'scheduled',
+      result_status: 'pending',
+      home_sets_won: 0,
+      away_sets_won: 0,
+      notes: null
+    })
+    .select('*')
+    .single();
+
+  if (matchError) {
+    throw matchError;
+  }
+
+  const { error: updateError } = await supabase
+    .from('tournament_bracket_matches')
+    .update({ match_id: match.id })
+    .eq('id', bracketMatch.id)
+    .is('match_id', null);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return 1;
+}
+
+export async function advanceWinnerToNextMatch(
+  bracketMatch: Pick<
+    TournamentBracketMatch,
+    'advances_to_id' | 'advances_to_slot'
+  >,
+  winnerTeamId: string,
+  seasonId: string,
+  phase: Extract<MatchPhase, 'playoff' | 'playout'>
+): Promise<number> {
+  if (!bracketMatch.advances_to_id || !bracketMatch.advances_to_slot) {
+    return 0;
+  }
+
+  const updateValues =
+    bracketMatch.advances_to_slot === 'home'
+      ? { home_team_id: winnerTeamId }
+      : { away_team_id: winnerTeamId };
+
+  const { error: updateError } = await supabase
+    .from('tournament_bracket_matches')
+    .update(updateValues)
+    .eq('id', bracketMatch.advances_to_id);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return createKnockoutMatchIfReady(bracketMatch.advances_to_id, seasonId, phase);
+}
+
+export async function updateBracketWinner(match: Match): Promise<void> {
+  const winnerTeamId = getMatchWinnerTeamId(match);
+
+  if (!winnerTeamId) {
+    return;
+  }
+
+  const { data: bracketMatch, error: bracketMatchError } = await supabase
+    .from('tournament_bracket_matches')
+    .select('*')
+    .eq('match_id', match.id)
+    .maybeSingle();
+
+  if (bracketMatchError) {
+    throw bracketMatchError;
+  }
+
+  if (!bracketMatch) {
+    return;
+  }
+
+  if (bracketMatch.winner_team_id === winnerTeamId) {
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('tournament_bracket_matches')
+    .update({ winner_team_id: winnerTeamId })
+    .eq('id', bracketMatch.id);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  if (match.phase === 'playoff' || match.phase === 'playout') {
+    await advanceWinnerToNextMatch(bracketMatch, winnerTeamId, match.season_id, match.phase);
+  }
+}
+
+async function clearBracketWinner(matchId: string): Promise<void> {
+  const { error } = await supabase
+    .from('tournament_bracket_matches')
+    .update({ winner_team_id: null })
+    .eq('match_id', matchId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function processBracketByes(
+  bracketId: string,
+  seasonId: string,
+  phase: Extract<MatchPhase, 'playoff' | 'playout'>
+): Promise<number> {
+  const { data: byeMatches, error } = await supabase
+    .from('tournament_bracket_matches')
+    .select('*')
+    .eq('bracket_id', bracketId)
+    .eq('is_bye', true)
+    .not('winner_team_id', 'is', null)
+    .order('position', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  let createdMatches = 0;
+
+  for (const byeMatch of byeMatches) {
+    if (byeMatch.winner_team_id) {
+      createdMatches += await advanceWinnerToNextMatch(
+        byeMatch,
+        byeMatch.winner_team_id,
+        seasonId,
+        phase
+      );
+    }
+  }
+
+  return createdMatches;
+}
+
 async function createBracket(
   tournamentId: string,
   seasonId: string,
-  bracketType: Extract<BracketType, 'playoff' | 'playout'>,
+  bracketType: Extract<BracketType, 'knockout' | 'playoff' | 'playout'>,
   name: string,
   qualifiedTeams: StandingRow[],
   allowByes: boolean
 ): Promise<number> {
   const bracketSize = nextPowerOfTwo(qualifiedTeams.length);
-  const roundLabel = getFirstRoundLabel(bracketSize);
   const fixtures = generateBracketSeedsWithByes(qualifiedTeams, allowByes);
+  const roundCount = Math.log2(bracketSize);
+  const phase: Extract<MatchPhase, 'playoff' | 'playout'> =
+    bracketType === 'playout' ? 'playout' : 'playoff';
 
   const { data: bracket, error: bracketError } = await supabase
     .from('tournament_brackets')
@@ -548,56 +775,156 @@ async function createBracket(
   }
 
   let createdMatches = 0;
+  const rowsByRound: TournamentBracketMatch[][] = [];
 
-  for (const [index, fixture] of fixtures.entries()) {
-    let matchId: string | null = null;
+  for (let roundNumber = 1; roundNumber <= roundCount; roundNumber += 1) {
+    const matchCount = bracketSize / 2 ** roundNumber;
+    const roundRows: TournamentBracketMatch[] = [];
 
-    if (fixture.home && fixture.away) {
-      const { data: match, error: matchError } = await supabase
-        .from('matches')
+    for (let position = 1; position <= matchCount; position += 1) {
+      const fixture = roundNumber === 1 ? fixtures[position - 1] ?? null : null;
+      let matchId: string | null = null;
+
+      if (fixture?.home && fixture.away) {
+        const { data: match, error: matchError } = await supabase
+          .from('matches')
+          .insert({
+            season_id: seasonId,
+            phase,
+            home_team_id: fixture.home.teamId,
+            away_team_id: fixture.away.teamId,
+            scheduled_at: null,
+            venue: null,
+            status: 'scheduled',
+            result_status: 'pending',
+            home_sets_won: 0,
+            away_sets_won: 0,
+            notes: null
+          })
+          .select('*')
+          .single();
+
+        if (matchError) {
+          throw matchError;
+        }
+
+        matchId = match.id;
+        createdMatches += 1;
+      }
+
+      const { data: bracketMatch, error: bracketMatchError } = await supabase
+        .from('tournament_bracket_matches')
         .insert({
-          season_id: seasonId,
-          phase: bracketType as MatchPhase,
-          home_team_id: fixture.home.teamId,
-          away_team_id: fixture.away.teamId,
-          scheduled_at: null,
-          venue: null,
-          status: 'scheduled',
-          result_status: 'pending',
-          home_sets_won: 0,
-          away_sets_won: 0,
-          notes: null
+          bracket_id: bracket.id,
+          match_id: matchId,
+          round_number: roundNumber,
+          round_label: getRoundLabel(bracketSize, roundNumber),
+          position,
+          home_seed: fixture?.home?.seed ?? null,
+          away_seed: fixture?.away?.seed ?? null,
+          home_team_id: fixture?.home?.teamId ?? null,
+          away_team_id: fixture?.away?.teamId ?? null,
+          winner_team_id: fixture?.isBye
+            ? fixture.home?.teamId ?? fixture.away?.teamId ?? null
+            : null,
+          is_bye: fixture?.isBye ?? false,
+          advances_to_id: null,
+          advances_to_slot: null
         })
         .select('*')
         .single();
 
-      if (matchError) {
-        throw matchError;
+      if (bracketMatchError) {
+        throw bracketMatchError;
       }
 
-      matchId = match.id;
-      createdMatches += 1;
+      roundRows.push(bracketMatch);
     }
 
-    const { error: bracketMatchError } = await supabase.from('tournament_bracket_matches').insert({
-      bracket_id: bracket.id,
-      match_id: matchId,
-      round_number: 1,
-      round_label: roundLabel,
-      position: index + 1,
-      home_seed: fixture.home?.seed ?? null,
-      away_seed: fixture.away?.seed ?? null,
-      home_team_id: fixture.home?.teamId ?? null,
-      away_team_id: fixture.away?.teamId ?? null,
-      winner_team_id: fixture.isBye ? fixture.home?.teamId ?? fixture.away?.teamId ?? null : null,
-      is_bye: fixture.isBye,
-      advances_to_id: null,
-      advances_to_slot: null
-    });
+    rowsByRound.push(roundRows);
+  }
 
-    if (bracketMatchError) {
-      throw bracketMatchError;
+  for (let roundIndex = 0; roundIndex < rowsByRound.length - 1; roundIndex += 1) {
+    const currentRound = rowsByRound[roundIndex] ?? [];
+    const nextRound = rowsByRound[roundIndex + 1] ?? [];
+
+    for (const mapping of getAdvancementMappings(currentRound.length)) {
+      const currentMatch = currentRound.find((row) => row.position === mapping.fromPosition);
+      const nextMatch = nextRound.find((row) => row.position === mapping.toPosition);
+
+      if (!currentMatch || !nextMatch) {
+        continue;
+      }
+
+      const { error: updateError } = await supabase
+        .from('tournament_bracket_matches')
+        .update({
+          advances_to_id: nextMatch.id,
+          advances_to_slot: mapping.slot
+        })
+        .eq('id', currentMatch.id);
+
+      if (updateError) {
+        throw updateError;
+      }
     }
+  }
+
+  createdMatches += await processBracketByes(
+    bracket.id,
+    seasonId,
+    phase
+  );
+
+  return createdMatches;
+}
+
+export async function generateKnockoutBracket(input: {
+  tournamentId: string;
+  seasonId: string;
+  standings: StandingRow[];
+  allowByes: boolean;
+}): Promise<number> {
+  const { data: existingBrackets, error: bracketsError } = await supabase
+    .from('tournament_brackets')
+    .select('id')
+    .eq('tournament_id', input.tournamentId)
+    .eq('bracket_type', 'knockout');
+
+  if (bracketsError) {
+    throw bracketsError;
+  }
+
+  if (existingBrackets.length > 0) {
+    throw new Error('Il tabellone è già stato generato e non può essere modificato.');
+  }
+
+  const matches = await listMatchesBySeason(input.seasonId);
+
+  if (matches.some((match) => match.phase === 'playoff' || match.phase === 'playout')) {
+    throw new Error('Esistono già partite di tabellone per questo torneo.');
+  }
+
+  const createdMatches = await createBracket(
+    input.tournamentId,
+    input.seasonId,
+    'knockout',
+    'Tabellone eliminazione diretta',
+    input.standings,
+    input.allowByes
+  );
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from('tournaments')
+    .update({
+      current_phase: 'knockout',
+      knockout_generated_at: now
+    })
+    .eq('id', input.tournamentId);
+
+  if (updateError) {
+    throw updateError;
   }
 
   return createdMatches;

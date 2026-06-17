@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
-import type { MatchWithSets } from '@/features/matches/api/matchesApi';
+import type { MatchWithSets, TournamentBracketWithMatches } from '@/features/matches/api/matchesApi';
+import { listTournamentBrackets } from '@/features/matches/api/matchesApi';
 import type { TeamWithMembers } from '@/features/teams/api/teamsApi';
 
 export type PublicTournament = Database['public']['Tables']['tournaments']['Row'];
@@ -14,6 +15,7 @@ export type PublicTournamentData = {
   season: PublicSeason;
   teams: PublicTeam[];
   matches: MatchWithSets[];
+  brackets: TournamentBracketWithMatches[];
 };
 
 export async function listPublicTournaments(): Promise<PublicTournament[]> {
@@ -158,15 +160,17 @@ export async function getPublicTournamentData(slug: string | null): Promise<Publ
     return null;
   }
 
-  const [teams, matches] = await Promise.all([
+  const [teams, matches, brackets] = await Promise.all([
     listPublicTeams(season.id),
-    listPublicMatches(season.id)
+    listPublicMatches(season.id),
+    listTournamentBrackets(tournament.id)
   ]);
 
   return {
     tournament,
     season,
     teams,
-    matches
+    matches,
+    brackets
   };
 }

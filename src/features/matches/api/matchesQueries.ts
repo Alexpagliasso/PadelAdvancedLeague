@@ -13,6 +13,7 @@ import {
   type SaveMatchInput,
   type UpdateMatchInput
 } from '@/features/matches/api/matchesApi';
+import { publicTournamentQueryKeys } from '@/features/public/api/publicTournamentQueries';
 import { tournamentQueryKeys } from '@/features/tournaments/api/tournamentsQueries';
 
 export const matchQueryKeys = {
@@ -66,9 +67,13 @@ export function useUpdateMatchMutation(seasonId: string | null) {
   return useMutation({
     mutationFn: (input: UpdateMatchInput) => updateMatch(input),
     onSuccess: async () => {
-      if (seasonId) {
-        await queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) });
-      }
+      await Promise.all([
+        seasonId
+          ? queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) })
+          : Promise.resolve(),
+        queryClient.invalidateQueries({ queryKey: matchQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: publicTournamentQueryKeys.all })
+      ]);
     }
   });
 }
@@ -79,9 +84,13 @@ export function useResetMatchResultMutation(seasonId: string | null) {
   return useMutation({
     mutationFn: (id: string) => resetMatchResult(id),
     onSuccess: async () => {
-      if (seasonId) {
-        await queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) });
-      }
+      await Promise.all([
+        seasonId
+          ? queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) })
+          : Promise.resolve(),
+        queryClient.invalidateQueries({ queryKey: matchQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: publicTournamentQueryKeys.all })
+      ]);
     }
   });
 }
@@ -133,6 +142,7 @@ export function useGeneratePlayoffPlayoutMutation(
         seasonId
           ? queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) })
           : Promise.resolve(),
+        queryClient.invalidateQueries({ queryKey: publicTournamentQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: tournamentQueryKeys.adminList() })
       ]);
     }

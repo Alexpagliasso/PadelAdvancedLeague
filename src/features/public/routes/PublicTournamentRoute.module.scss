@@ -593,6 +593,265 @@
   font-size: 0.875rem;
 }
 
+.phaseSegmentedControl {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf7ff 100%);
+  padding: 0.25rem;
+  box-shadow: 0 0.35rem 1rem rgb(6 26 77 / 6%);
+  scrollbar-width: none;
+}
+
+.phaseSegmentedControl::-webkit-scrollbar {
+  display: none;
+}
+
+.phaseSegment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.55rem 0.85rem;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.phaseSegment:hover {
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+  transform: translateY(-1px);
+}
+
+.phaseSegment:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
+}
+
+.phaseSegmentActive,
+.phaseSegmentActive:hover {
+  border-color: var(--pad-public-navy);
+  background: var(--pad-public-navy);
+  color: #ffffff;
+  box-shadow: 0 0.4rem 1rem rgb(6 26 77 / 16%);
+  transform: none;
+}
+
+.publicFilterPanel {
+  display: grid;
+  gap: 0.65rem;
+  max-width: 100%;
+}
+
+.publicFilterToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-height: 3rem;
+  width: 100%;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 1rem;
+  background: var(--pad-public-surface);
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  font-weight: 900;
+  padding: 0.65rem 0.8rem;
+  box-shadow: 0 0.6rem 1.4rem rgb(6 26 77 / 7%);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.publicFilterToggle:hover,
+.publicFilterPanelOpen .publicFilterToggle {
+  border-color: var(--pad-public-blue-border);
+  background: var(--pad-public-blue-soft);
+  box-shadow: 0 0.8rem 1.8rem rgb(6 26 77 / 10%);
+}
+
+.publicFilterToggle:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
+}
+
+.publicFilterToggleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.publicFilterIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--pad-public-blue);
+  flex: 0 0 auto;
+}
+
+.publicFilterBadge {
+  border-radius: 999px;
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 0.22rem 0.6rem;
+  white-space: nowrap;
+}
+
+.publicFilterPanelBody {
+  display: grid;
+  gap: 0.8rem;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 1rem;
+  background: var(--pad-public-surface);
+  padding: 0.8rem;
+  box-shadow: 0 0.85rem 2rem rgb(6 26 77 / 9%);
+  animation: public-filter-in 150ms ease-out;
+}
+
+@keyframes public-filter-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.publicFilterSection {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.publicFilterSectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.publicFilterSectionHeader h3 {
+  margin: 0;
+  color: var(--pad-public-navy);
+  font-size: 0.84rem;
+}
+
+.publicFilterSectionHeader span {
+  color: var(--pad-public-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.publicFilterSelectedTeams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.publicFilterSelectedTeam {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--pad-public-orange-border);
+  border-radius: 999px;
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0.32rem 0.45rem 0.32rem 0.7rem;
+}
+
+.publicFilterSelectedTeam button {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pad-public-navy);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.publicFilterTeamResults {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 17rem;
+  overflow: auto;
+}
+
+.publicFilterTeamResult {
+  display: grid;
+  gap: 0.15rem;
+  min-height: 3rem;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 0.85rem;
+  background: var(--pad-public-surface);
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+}
+
+.publicFilterTeamResult:hover {
+  border-color: var(--pad-public-blue-border);
+  background: var(--pad-public-blue-soft);
+}
+
+.publicFilterTeamResult:focus-visible,
+.publicFilterSelectedTeam button:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
+}
+
+.publicFilterTeamResult strong {
+  font-size: 0.86rem;
+}
+
+.publicFilterTeamResult span {
+  color: var(--pad-public-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.publicFilterNoResults {
+  margin: 0;
+  border: 1px dashed var(--pad-public-border);
+  border-radius: 0.85rem;
+  color: var(--pad-public-muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 0.75rem;
+}
+
 .standingsList {
   display: grid;
   gap: 0.65rem;
@@ -893,18 +1152,6 @@
   gap: 0.75rem;
 }
 
-.calendarFilter {
-  display: grid;
-  gap: 0.65rem;
-}
-
-.calendarFilterBar {
-  display: grid;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.calendarFilterToggle,
 .clearFilterButton {
   min-height: 2.75rem;
   border: 1px solid var(--pad-public-border);
@@ -913,64 +1160,10 @@
   font-weight: 800;
 }
 
-.calendarFilterToggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  width: 100%;
-  background: var(--pad-public-blue-soft);
-  color: var(--pad-public-navy);
-  padding: 0.55rem 0.65rem 0.55rem 0.9rem;
-}
-
-.calendarFilterToggle:hover {
-  border-color: var(--pad-public-blue-border);
-  background: #ffffff;
-}
-
-.calendarFilterLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-}
-
-.calendarFilterLabel span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.calendarFilterIcon {
-  width: 1.15rem;
-  height: 1.15rem;
-  color: var(--pad-public-blue);
-  flex: 0 0 auto;
-}
-
-.calendarFilterCount {
-  border-radius: 999px;
-  background: var(--pad-public-orange-soft);
-  color: var(--pad-public-navy);
-  font-size: 0.75rem;
-  padding: 0.18rem 0.55rem;
-}
-
 .clearFilterButton {
   background: var(--pad-public-orange-soft);
   color: var(--pad-public-navy);
   padding: 0.45rem 0.85rem;
-}
-
-.calendarFilterPanel {
-  display: grid;
-  gap: 0.75rem;
-  border: 1px solid var(--pad-public-border);
-  border-radius: 1rem;
-  background: var(--pad-public-surface);
-  padding: 0.75rem;
-  box-shadow: 0 0.75rem 1.8rem rgb(6 26 77 / 8%);
 }
 
 .calendarFilterSearch {
@@ -985,35 +1178,14 @@
   min-height: 2.75rem;
   border: 1px solid var(--pad-public-border);
   border-radius: 0.75rem;
+  background: var(--pad-public-surface);
   color: var(--pad-public-text);
   padding: 0.65rem 0.8rem;
 }
 
-.calendarFilterOptions {
-  display: grid;
-  gap: 0.45rem;
-  max-height: 18rem;
-  overflow: auto;
-}
-
-.calendarFilterOption {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-height: 2.75rem;
-  border: 1px solid var(--pad-public-border);
-  border-radius: 0.75rem;
-  background: var(--pad-public-blue-soft);
-  color: var(--pad-public-navy);
-  cursor: pointer;
-  font-weight: 800;
-  padding: 0.55rem 0.7rem;
-}
-
-.calendarFilterOption input {
-  width: 1.1rem;
-  height: 1.1rem;
-  accent-color: var(--pad-public-orange);
+.calendarFilterSearch input:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
 }
 
 .matchCard {
@@ -1080,9 +1252,17 @@
 
 .matchTopline {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.matchBadges {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .matchMeta {
@@ -1218,6 +1398,21 @@
   text-transform: capitalize;
 }
 
+.matchPhaseBadge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 12rem;
+  border: 1px solid var(--pad-public-blue-border);
+  border-radius: 999px;
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0.19rem 0.45rem;
+  text-transform: none;
+}
+
 .badgeIcon {
   width: 0.75rem;
   height: 0.75rem;
@@ -1258,6 +1453,151 @@
   color: #ffffff;
 }
 
+.badgeBye {
+  border: 1px solid var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+}
+
+.bracketBoard {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.bracketControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: -0.15rem 0 0.35rem;
+}
+
+.bracketControlButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 999px;
+  background: var(--pad-public-surface);
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.bracketControlButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.bracketControlButton:hover {
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+}
+
+.bracketControlButton:disabled:hover {
+  border-color: var(--pad-public-border);
+  background: var(--pad-public-surface);
+}
+
+.bracketControlButton:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
+}
+
+.bracketVisibleLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: min(13rem, 54vw);
+  border: 1px solid var(--pad-public-blue-border);
+  border-radius: 999px;
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.45rem 0.75rem;
+  text-align: center;
+}
+
+.bracketRound {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--pad-public-blue-soft) 48%, var(--pad-public-surface));
+  padding: 0.75rem;
+}
+
+.bracketRound h3 {
+  margin: 0;
+  color: var(--pad-public-navy);
+  font-size: 0.95rem;
+}
+
+.bracketRoundMatches {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.bracketMatchCard {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 1rem;
+  background: var(--pad-public-surface);
+  padding: 0.85rem;
+  box-shadow: 0 0.4rem 1rem rgb(6 26 77 / 6%);
+}
+
+.bracketMatchPending {
+  border-color: var(--pad-public-blue-border);
+  background: var(--pad-public-blue-soft);
+}
+
+.bracketMatchBye {
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+}
+
+.bracketMatchMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bracketMatchCode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  border-radius: 999px;
+  background: var(--pad-public-navy);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  padding: 0.22rem 0.48rem;
+}
+
+.bracketWaiting {
+  margin: 0;
+  color: var(--pad-public-navy);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.bracketMatchCard .badge span,
+.bracketMatchCard .badgeIcon {
+  color: inherit;
+}
+
 .tableWrap {
   display: none;
   overflow-x: auto;
@@ -1296,6 +1636,20 @@
 .emptyState h1,
 .emptyState p {
   margin: 0;
+}
+
+.inlineEmptyState {
+  border: 1px solid var(--pad-public-border);
+  border-radius: 1rem;
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
+  padding: 1rem;
+  text-align: center;
+}
+
+.inlineEmptyState p {
+  margin: 0;
+  font-weight: 800;
 }
 
 .error {
@@ -1392,30 +1746,62 @@
     display: block;
   }
 
-  .calendarFilter {
-    justify-self: stretch;
+  .phaseSegmentedControl {
+    width: max-content;
+    max-width: 100%;
   }
 
-  .calendarFilterBar {
-    display: flex;
-    justify-content: flex-start;
+  .publicFilterPanel {
+    width: min(100%, 54rem);
   }
 
-  .calendarFilterToggle {
-    width: auto;
-    min-width: 16rem;
+  .publicFilterToggle {
+    width: max-content;
+    min-width: 11rem;
+    border-radius: 999px;
   }
 
-  .calendarFilterPanel {
-    max-width: 42rem;
+  .publicFilterPanelBody {
+    grid-template-columns: minmax(18rem, 1.25fr) minmax(16rem, auto) auto;
+    align-items: start;
+    padding: 0.9rem;
   }
 
-  .calendarFilterOptions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .publicFilterPanelBody .clearFilterButton {
+    align-self: start;
+    margin-top: 1.45rem;
   }
 
   .matchList {
     gap: 1rem;
+  }
+
+  .bracketBoard {
+    grid-template-columns: repeat(2, minmax(15.5rem, 1fr));
+    align-items: start;
+    gap: 1rem;
+    padding: 0;
+  }
+
+  .bracketControls {
+    margin-top: -0.1rem;
+  }
+
+  .bracketVisibleLabel {
+    min-width: 18rem;
+  }
+
+  .bracketRound {
+    min-height: 100%;
+    border: 1px solid var(--pad-public-border);
+    border-radius: 1.1rem;
+    background: var(--pad-public-surface);
+    padding: 0.9rem;
+  }
+
+  .bracketMatchCard {
+    border-radius: 0.85rem;
+    box-shadow: 0 0.45rem 1.35rem rgb(6 26 77 / 7%);
   }
 
   .matchCard {
@@ -1482,6 +1868,7 @@
   }
 
   .matchMain {
+    align-items: center;
     justify-items: center;
     gap: 0.65rem;
     min-width: 0;
@@ -1489,11 +1876,12 @@
 
   .matchTopline {
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     width: 100%;
   }
 
   .matchTeams {
+    align-items: center;
     justify-content: flex-start;
     gap: 0.65rem;
     color: #0f172a;
@@ -1957,10 +2345,72 @@
     color: var(--pad-public-text);
   }
 
-  .sectionHeader span,
-  .muted {
-    color: var(--pad-public-muted);
-  }
+.sectionHeader span,
+.muted {
+  color: var(--pad-public-muted);
+}
+
+.phaseSegmentedControl {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf7ff 100%);
+  padding: 0.25rem;
+  box-shadow: 0 0.35rem 1rem rgb(6 26 77 / 6%);
+  scrollbar-width: none;
+}
+
+.phaseSegmentedControl::-webkit-scrollbar {
+  display: none;
+}
+
+.phaseSegment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.55rem 0.85rem;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.phaseSegment:hover {
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+  transform: translateY(-1px);
+}
+
+.phaseSegment:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
+}
+
+.phaseSegmentActive,
+.phaseSegmentActive:hover {
+  border-color: var(--pad-public-navy);
+  background: var(--pad-public-navy);
+  color: #ffffff;
+  box-shadow: 0 0.4rem 1rem rgb(6 26 77 / 16%);
+  transform: none;
+}
 
   .standingCard,
   .accordionItem,
