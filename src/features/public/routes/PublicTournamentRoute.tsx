@@ -306,6 +306,20 @@ function getCompactSetLabels(match: MatchWithSets): string[] {
 
 function sortCalendarMatches(matches: MatchWithSets[]): MatchWithSets[] {
   return [...matches].sort((first, second) => {
+    const firstMatchday = first.matchday ?? Number.MAX_SAFE_INTEGER;
+    const secondMatchday = second.matchday ?? Number.MAX_SAFE_INTEGER;
+
+    if (firstMatchday !== secondMatchday) {
+      return firstMatchday - secondMatchday;
+    }
+
+    const firstDisplayOrder = first.display_order ?? Number.MAX_SAFE_INTEGER;
+    const secondDisplayOrder = second.display_order ?? Number.MAX_SAFE_INTEGER;
+
+    if (firstDisplayOrder !== secondDisplayOrder) {
+      return firstDisplayOrder - secondDisplayOrder;
+    }
+
     const firstDate = first.scheduled_at ?? first.created_at;
     const secondDate = second.scheduled_at ?? second.created_at;
     return firstDate.localeCompare(secondDate);
@@ -457,6 +471,10 @@ function PublicTournamentSelectionPage({
             <div className={styles.selectionIntroCard}>
               <h1>Scegli competizione</h1>
               <p>Seleziona il torneo da seguire</p>
+              <Link className={styles.selectionAdminLink} to={appPaths.auth}>
+                <MdAdminPanelSettings aria-hidden="true" />
+                <span>Admin Login</span>
+              </Link>
             </div>
             <label className={styles.selectionSearch}>
               <span className={styles.srOnly}>Cerca torneo</span>

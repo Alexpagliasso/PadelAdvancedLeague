@@ -13,6 +13,7 @@ export type SaveTeamInput = {
   name: string;
   slug: string;
   logo_url: string | null;
+  ranking: number | null;
   player_ids: string[];
 };
 
@@ -147,7 +148,8 @@ export async function createTeam(input: SaveTeamInput): Promise<Team> {
       season_id: input.season_id,
       name: input.name,
       slug: input.slug,
-      logo_url: input.logo_url
+      logo_url: input.logo_url,
+      ranking: input.ranking
     })
     .select('*')
     .single();
@@ -176,7 +178,8 @@ export async function updateTeam(input: UpdateTeamInput): Promise<Team> {
       season_id: input.season_id,
       name: input.name,
       slug: input.slug,
-      logo_url: input.logo_url
+      logo_url: input.logo_url,
+      ranking: input.ranking
     })
     .eq('id', input.id)
     .select('*')

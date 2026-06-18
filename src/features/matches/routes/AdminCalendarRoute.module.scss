@@ -78,6 +78,7 @@
 .field {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .label {
@@ -91,10 +92,12 @@
 .select,
 .input {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: 0.5rem;
   background: var(--color-surface);
   color: var(--color-text);
+  box-sizing: border-box;
   padding: 0.7rem 0.8rem;
 }
 
@@ -365,6 +368,8 @@
 
 .modal {
   width: min(100%, 40rem);
+  max-width: calc(100vw - 1.5rem);
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
   background: var(--color-surface);
@@ -402,6 +407,7 @@
 .modalGrid {
   display: grid;
   gap: 0.6rem;
+  min-width: 0;
 }
 
 .resultBox {
@@ -426,15 +432,18 @@
 
 .scoreRow {
   display: grid;
-  grid-template-columns: minmax(4rem, 1fr) 4.5rem auto 4.5rem;
+  grid-template-columns: minmax(3.5rem, 1fr) minmax(3.2rem, 4.5rem) auto minmax(3.2rem, 4.5rem);
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .scoreInput {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: 0.5rem;
+  box-sizing: border-box;
   color: var(--color-text);
   padding: 0.6rem;
   text-align: center;
@@ -470,7 +479,7 @@
 
   .filters {
     grid-template-columns: minmax(12rem, 18rem) minmax(10rem, 14rem) minmax(18rem, 1fr) auto;
-    align-items: start;
+    align-items: end;
   }
 
   .field {
@@ -492,6 +501,22 @@
   .tableWrap {
     display: block;
     overflow-x: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalOverlay {
+    padding: 0.5rem;
+  }
+
+  .modal {
+    max-width: calc(100vw - 1rem);
+    padding: 0.7rem;
+  }
+
+  .scoreRow {
+    grid-template-columns: minmax(3.2rem, 1fr) minmax(2.8rem, 3.5rem) auto minmax(2.8rem, 3.5rem);
+    gap: 0.35rem;
   }
 }
 

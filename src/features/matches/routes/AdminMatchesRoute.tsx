@@ -17,7 +17,9 @@ import {
   buildMatchDateTime,
   formatMatchDateTime,
   getMatchDateInputValue,
-  getMatchTimeInputValue
+  getMatchTimeOrDefault,
+  getNearestHalfHourTime,
+  halfHourTimeSlots
 } from '@/features/matches/lib/matchDateTime';
 import { useTeamsBySeasonQuery } from '@/features/teams/api/teamsQueries';
 import { useAdminTournamentsQuery } from '@/features/tournaments/api/tournamentsQueries';
@@ -44,7 +46,7 @@ const emptyMatchForm: MatchFormState = {
   homeTeamId: '',
   awayTeamId: '',
   date: '',
-  time: '',
+  time: getNearestHalfHourTime(),
   venueOption: 'GPadel Borgaro',
   customVenue: '',
   status: 'scheduled',
@@ -55,14 +57,6 @@ const emptyMatchForm: MatchFormState = {
   set3Home: '',
   set3Away: ''
 };
-
-const timeSlots = Array.from({ length: 48 }, (_, index) => {
-  const hour = Math.floor(index / 2)
-    .toString()
-    .padStart(2, '0');
-  const minutes = index % 2 === 0 ? '00' : '30';
-  return `${hour}:${minutes}`;
-});
 
 const venueOptions = [
   'GPadel Borgaro',
@@ -220,7 +214,7 @@ function getSetsFromForm(form: MatchFormState): MatchSetInput[] {
 
 function matchToForm(match: MatchWithSets | null): MatchFormState {
   if (!match) {
-    return emptyMatchForm;
+    return { ...emptyMatchForm, time: getNearestHalfHourTime() };
   }
 
   const sortedSets = [...match.sets].sort((first, second) => first.set_number - second.set_number);
@@ -236,7 +230,7 @@ function matchToForm(match: MatchWithSets | null): MatchFormState {
     homeTeamId: match.home_team_id,
     awayTeamId: match.away_team_id,
     date: getMatchDateInputValue(match.scheduled_at),
-    time: getMatchTimeInputValue(match.scheduled_at),
+    time: getMatchTimeOrDefault(match.scheduled_at),
     venueOption: isKnownVenue || !venue ? venue || 'GPadel Borgaro' : 'Altro',
     customVenue: isKnownVenue ? '' : venue,
     status: match.status,
@@ -562,7 +556,7 @@ export function AdminMatchesRoute() {
                   value={form.time}
                 >
                   <option value="">Seleziona ora</option>
-                  {timeSlots.map((slot) => (
+                  {halfHourTimeSlots.map((slot) => (
                     <option key={slot} value={slot}>
                       {slot}
                     </option>

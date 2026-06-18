@@ -59,6 +59,7 @@ export type Database = {
           format: TournamentFormat;
           current_phase: CompetitionPhase;
           allow_byes: boolean;
+          use_ranking: boolean;
           playoff_teams_count: number | null;
           playout_teams_count: number | null;
           regular_calendar_generated_at: string | null;
@@ -100,6 +101,7 @@ export type Database = {
           name: string;
           slug: string;
           logo_url: string | null;
+          ranking: number | null;
         }
       >;
       players: TableDefinition<

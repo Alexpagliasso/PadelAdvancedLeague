@@ -50,13 +50,51 @@ function playerToForm(player: Player | null): PlayerFormState {
     profileId: player.profile_id ?? '',
     firstName: player.first_name,
     lastName: player.last_name,
-    displayName: player.display_name,
+    displayName: player.display_name || getGeneratedDisplayName(player.first_name, player.last_name),
     photoUrl: player.photo_url ?? ''
   };
 }
 
-function getDisplayName(firstName: string, lastName: string): string {
-  return `${firstName.trim()} ${lastName.trim()}`.trim();
+function getGeneratedDisplayName(firstName: string, lastName: string): string {
+  const normalizedFirstName = firstName.trim();
+  const normalizedLastName = lastName.trim();
+  const initial = normalizedFirstName ? `${normalizedFirstName.slice(0, 1).toUpperCase()}.` : '';
+
+  return [normalizedLastName, initial].filter(Boolean).join(' ');
+}
+
+function getFallbackPlayerLabel(player: Player): string {
+  return player.display_name || `${player.first_name} ${player.last_name}`.trim();
+}
+
+const randomFirstNames = [
+  'Marco',
+  'Luca',
+  'Andrea',
+  'Matteo',
+  'Davide',
+  'Alessandro',
+  'Giulia',
+  'Sara',
+  'Francesca',
+  'Elena'
+];
+
+const randomLastNames = [
+  'Rossi',
+  'Bianchi',
+  'Ferrari',
+  'Gallo',
+  'Costa',
+  'Romano',
+  'Bruno',
+  'Rizzo',
+  'Marino',
+  'Conti'
+];
+
+function pickRandomItem(items: string[]): string {
+  return items[Math.floor(Math.random() * items.length)] ?? items[0] ?? '';
 }
 
 export function AdminPlayersRoute() {
@@ -76,8 +114,10 @@ export function AdminPlayersRoute() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [playerListPage, setPlayerListPage] = useState(1);
   const [selectedBulkPlayerIds, setSelectedBulkPlayerIds] = useState<string[]>([]);
   const [isPlayerListOpen, setIsPlayerListOpen] = useState(false);
+  const [isDisplayNameEdited, setIsDisplayNameEdited] = useState(false);
 
   const selectedPlayer = players.find((player) => player.id === selectedPlayerId) ?? null;
   const filteredPlayers = useMemo(() => {
@@ -88,9 +128,22 @@ export function AdminPlayersRoute() {
     }
 
     return players.filter((player) =>
-      [player.display_name, player.first_name, player.last_name].join(' ').toLowerCase().includes(query)
+      [getFallbackPlayerLabel(player), player.first_name, player.last_name]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
     );
   }, [players, search]);
+  const playersPerPage = 8;
+  const playerPageCount = Math.max(1, Math.ceil(filteredPlayers.length / playersPerPage));
+  const visiblePlayers = useMemo(
+    () =>
+      filteredPlayers.slice(
+        (playerListPage - 1) * playersPerPage,
+        playerListPage * playersPerPage
+      ),
+    [filteredPlayers, playerListPage]
+  );
   const isBusy =
     createPlayerMutation.isPending ||
     updatePlayerMutation.isPending ||
@@ -111,9 +164,20 @@ export function AdminPlayersRoute() {
     };
   }, []);
 
+  useEffect(() => {
+    setPlayerListPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (playerListPage > playerPageCount) {
+      setPlayerListPage(playerPageCount);
+    }
+  }, [playerListPage, playerPageCount]);
+
   const handleNewPlayer = () => {
     setSelectedPlayerId(null);
     setForm(emptyPlayerForm);
+    setIsDisplayNameEdited(false);
     setPhotoFile(null);
     if (photoInputRef.current) {
       photoInputRef.current.value = '';
@@ -121,9 +185,55 @@ export function AdminPlayersRoute() {
     setFormError(null);
   };
 
+  const handleGenerateRandomPlayer = () => {
+    const existingLabels = new Set(
+      players.map((player) =>
+        [player.first_name, player.last_name, player.display_name].join(' ').toLowerCase()
+      )
+    );
+    let firstName = pickRandomItem(randomFirstNames);
+    let lastName = pickRandomItem(randomLastNames);
+    let attempts = 0;
+
+    while (
+      attempts < 30 &&
+      existingLabels.has(
+        [firstName, lastName, getGeneratedDisplayName(firstName, lastName)]
+          .join(' ')
+          .toLowerCase()
+      )
+    ) {
+      firstName = pickRandomItem(randomFirstNames);
+      lastName = pickRandomItem(randomLastNames);
+      attempts += 1;
+    }
+
+    if (attempts >= 30) {
+      lastName = `${lastName} ${Math.floor(Math.random() * 900 + 100).toString()}`;
+    }
+
+    setSelectedPlayerId(null);
+    setIsDisplayNameEdited(false);
+    setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
+    setForm({
+      profileId: '',
+      firstName,
+      lastName,
+      displayName: getGeneratedDisplayName(firstName, lastName),
+      photoUrl: ''
+    });
+    setFormError(null);
+  };
+
   const handleSelectPlayer = (player: Player) => {
     setSelectedPlayerId(player.id);
     setForm(playerToForm(player));
+    setIsDisplayNameEdited(
+      player.display_name !== getGeneratedDisplayName(player.first_name, player.last_name)
+    );
     setPhotoFile(null);
     if (photoInputRef.current) {
       photoInputRef.current.value = '';
@@ -141,7 +251,7 @@ export function AdminPlayersRoute() {
         profile_id: form.profileId || null,
         first_name: form.firstName,
         last_name: form.lastName,
-        display_name: form.displayName || getDisplayName(form.firstName, form.lastName),
+        display_name: form.displayName || getGeneratedDisplayName(form.firstName, form.lastName),
         photo_url: photoUrl
       };
 
@@ -154,6 +264,9 @@ export function AdminPlayersRoute() {
           displayName: payload.display_name,
           photoUrl: payload.photo_url ?? ''
         });
+        setIsDisplayNameEdited(
+          payload.display_name !== getGeneratedDisplayName(payload.first_name, payload.last_name)
+        );
         setPhotoFile(null);
         if (photoInputRef.current) {
           photoInputRef.current.value = '';
@@ -270,7 +383,7 @@ export function AdminPlayersRoute() {
             <p className={styles.muted}>Nessun giocatore trovato.</p>
           ) : null}
           <ul className={styles.list}>
-            {filteredPlayers.map((player) => (
+            {visiblePlayers.map((player) => (
               <li key={player.id}>
                 <div className={styles.selectableListItem}>
                   <label className={styles.bulkCheckbox}>
@@ -285,7 +398,7 @@ export function AdminPlayersRoute() {
                       }}
                       type="checkbox"
                     />
-                    <span className={styles.srOnly}>Seleziona {player.display_name}</span>
+                    <span className={styles.srOnly}>Seleziona {getFallbackPlayerLabel(player)}</span>
                   </label>
                   <button
                     className={cx(
@@ -300,10 +413,12 @@ export function AdminPlayersRoute() {
                   {player.photo_url ? (
                     <img alt="" className={styles.avatar} src={player.photo_url} />
                   ) : (
-                    <span className={styles.avatarFallback}>{player.display_name.slice(0, 1)}</span>
+                    <span className={styles.avatarFallback}>
+                      {getFallbackPlayerLabel(player).slice(0, 1)}
+                    </span>
                   )}
                   <span>
-                    <strong>{player.display_name}</strong>
+                    <strong>{getFallbackPlayerLabel(player)}</strong>
                     <small>
                       {player.first_name} {player.last_name}
                     </small>
@@ -313,6 +428,33 @@ export function AdminPlayersRoute() {
               </li>
             ))}
           </ul>
+          {filteredPlayers.length > playersPerPage ? (
+            <div className={styles.pagination} aria-label="Paginazione giocatori">
+              <button
+                className={styles.buttonSecondary}
+                disabled={playerListPage === 1}
+                onClick={() => {
+                  setPlayerListPage((current) => Math.max(1, current - 1));
+                }}
+                type="button"
+              >
+                Precedente
+              </button>
+              <span>
+                {playerListPage} / {playerPageCount}
+              </span>
+              <button
+                className={styles.buttonSecondary}
+                disabled={playerListPage === playerPageCount}
+                onClick={() => {
+                  setPlayerListPage((current) => Math.min(playerPageCount, current + 1));
+                }}
+                type="button"
+              >
+                Successivo
+              </button>
+            </div>
+          ) : null}
           </details>
         </aside>
 
@@ -322,21 +464,30 @@ export function AdminPlayersRoute() {
           </h2>
 
           <form className={styles.form} onSubmit={(event) => void handleSubmit(event)}>
+            <div className={styles.testActions}>
+              <button
+                className={styles.buttonSecondary}
+                disabled={isBusy}
+                onClick={handleGenerateRandomPlayer}
+                type="button"
+              >
+                Genera giocatore casuale
+              </button>
+            </div>
             <div className={styles.grid}>
               <label className={styles.field}>
                 <span className={styles.label}>Nome</span>
                 <input
                   className={styles.input}
-                  onBlur={() => {
-                    if (!form.displayName) {
-                      setForm((current) => ({
-                        ...current,
-                        displayName: getDisplayName(current.firstName, current.lastName)
-                      }));
-                    }
-                  }}
                   onChange={(event) => {
-                    setForm((current) => ({ ...current, firstName: event.target.value }));
+                    const firstName = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      firstName,
+                      displayName: isDisplayNameEdited
+                        ? current.displayName
+                        : getGeneratedDisplayName(firstName, current.lastName)
+                    }));
                   }}
                   required
                   value={form.firstName}
@@ -347,16 +498,15 @@ export function AdminPlayersRoute() {
                 <span className={styles.label}>Cognome</span>
                 <input
                   className={styles.input}
-                  onBlur={() => {
-                    if (!form.displayName) {
-                      setForm((current) => ({
-                        ...current,
-                        displayName: getDisplayName(current.firstName, current.lastName)
-                      }));
-                    }
-                  }}
                   onChange={(event) => {
-                    setForm((current) => ({ ...current, lastName: event.target.value }));
+                    const lastName = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      lastName,
+                      displayName: isDisplayNameEdited
+                        ? current.displayName
+                        : getGeneratedDisplayName(current.firstName, lastName)
+                    }));
                   }}
                   required
                   value={form.lastName}
@@ -368,6 +518,7 @@ export function AdminPlayersRoute() {
                 <input
                   className={styles.input}
                   onChange={(event) => {
+                    setIsDisplayNameEdited(true);
                     setForm((current) => ({ ...current, displayName: event.target.value }));
                   }}
                   required

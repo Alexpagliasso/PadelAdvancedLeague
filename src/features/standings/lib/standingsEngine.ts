@@ -96,10 +96,14 @@ function applyMatchToRows(rows: Map<string, MutableStandingRow>, match: MatchWit
   awayRow.points += getPointsForSetScore(match.away_sets_won, match.home_sets_won);
 
   match.sets.forEach((set) => {
-    homeRow.gamesWon += set.home_games;
-    homeRow.gamesLost += set.away_games;
-    awayRow.gamesWon += set.away_games;
-    awayRow.gamesLost += set.home_games;
+    const isSupertiebreak = set.set_number === 3 && Math.max(set.home_games, set.away_games) >= 10;
+    const homeGamesForStandings = isSupertiebreak ? 1 : set.home_games;
+    const awayGamesForStandings = isSupertiebreak ? 1 : set.away_games;
+
+    homeRow.gamesWon += homeGamesForStandings;
+    homeRow.gamesLost += awayGamesForStandings;
+    awayRow.gamesWon += awayGamesForStandings;
+    awayRow.gamesLost += homeGamesForStandings;
   });
 
   homeRow.setDiff = homeRow.setsWon - homeRow.setsLost;

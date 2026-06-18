@@ -1,5 +1,14 @@
 const matchTimeZone = 'Europe/Rome';
 
+export const halfHourTimeSlots = Array.from({ length: 32 }, (_, index) => {
+  const slotIndex = index + 16;
+  const hour = Math.floor(slotIndex / 2)
+    .toString()
+    .padStart(2, '0');
+  const minutes = slotIndex % 2 === 0 ? '00' : '30';
+  return `${hour}:${minutes}`;
+});
+
 function getDateTimeParts(value: string): Record<string, string> {
   const parts = new Intl.DateTimeFormat('en-CA', {
     day: '2-digit',
@@ -107,4 +116,23 @@ export function getMatchTimeInputValue(value: string | null): string {
 
   const parts = getDateTimeParts(value);
   return `${getRequiredPart(parts, 'hour')}:${getRequiredPart(parts, 'minute')}`;
+}
+
+export function getNearestHalfHourTime(date = new Date()): string {
+  const parts = getDateTimeParts(date.toISOString());
+  let hour = Number(getRequiredPart(parts, 'hour'));
+  const minute = Number(getRequiredPart(parts, 'minute'));
+  const roundedMinute = Math.round(minute / 30) * 30;
+
+  if (roundedMinute === 60) {
+    hour = (hour + 1) % 24;
+  }
+
+  const normalizedMinute = roundedMinute === 60 ? 0 : roundedMinute;
+
+  return `${hour.toString().padStart(2, '0')}:${normalizedMinute.toString().padStart(2, '0')}`;
+}
+
+export function getMatchTimeOrDefault(value: string | null): string {
+  return getMatchTimeInputValue(value) || getNearestHalfHourTime();
 }

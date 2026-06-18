@@ -21,6 +21,7 @@ type TeamFormState = {
   logoUrl: string;
   playerOneId: string;
   playerTwoId: string;
+  ranking: string;
 };
 
 const emptyTeamForm: TeamFormState = {
@@ -28,7 +29,8 @@ const emptyTeamForm: TeamFormState = {
   slug: '',
   logoUrl: '',
   playerOneId: '',
-  playerTwoId: ''
+  playerTwoId: '',
+  ranking: ''
 };
 
 function slugify(value: string): string {
@@ -55,6 +57,14 @@ function getPlayerLabel(player: Player): string {
   return player.display_name || `${player.first_name} ${player.last_name}`.trim();
 }
 
+function getTeamFallbackName(players: Player[]): string {
+  return players.map(getPlayerLabel).join(' / ');
+}
+
+function shuffleItems<TItem>(items: TItem[]): TItem[] {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
 function teamToForm(team: TeamWithMembers | null): TeamFormState {
   if (!team) {
     return emptyTeamForm;
@@ -67,8 +77,27 @@ function teamToForm(team: TeamWithMembers | null): TeamFormState {
     slug: team.slug,
     logoUrl: team.logo_url ?? '',
     playerOneId: sortedMembers[0]?.player_id ?? '',
-    playerTwoId: sortedMembers[1]?.player_id ?? ''
+    playerTwoId: sortedMembers[1]?.player_id ?? '',
+    ranking: team.ranking?.toString() ?? ''
   };
+}
+
+function getRankingValidationError(
+  rankingValue: string,
+  expectedTeamsCount: number,
+  usedRankings: Set<number>
+): string | null {
+  const ranking = Number(rankingValue);
+
+  if (!Number.isInteger(ranking) || ranking < 1 || ranking > expectedTeamsCount) {
+    return `Il ranking deve essere compreso tra 1 e ${expectedTeamsCount.toString()}.`;
+  }
+
+  if (usedRankings.has(ranking)) {
+    return "Ranking già assegnato a un'altra squadra.";
+  }
+
+  return null;
 }
 
 function PlayerAvatar({ player }: { player: Player }) {
@@ -90,9 +119,12 @@ export function AdminTeamsRoute() {
   const tournamentOptions = useMemo(
     () =>
       (tournamentsQuery.data ?? [])
-        .filter((tournament) => tournament.status === 'active')
+        .filter((tournament) => tournament.status !== 'archived')
         .map((tournament) => ({
           id: tournament.id,
+          expectedTeamsCount: tournament.expected_teams_count,
+          format: tournament.format,
+          useRanking: tournament.use_ranking,
           name: tournament.name,
           mainSeasonId:
             tournament.seasons.find((season) => season.slug === 'main')?.id ??
@@ -109,6 +141,7 @@ export function AdminTeamsRoute() {
   const [form, setForm] = useState<TeamFormState>(emptyTeamForm);
   const [playerSearch, setPlayerSearch] = useState('');
   const [teamSearch, setTeamSearch] = useState('');
+  const [teamListPage, setTeamListPage] = useState(1);
   const [selectedBulkTeamIds, setSelectedBulkTeamIds] = useState<string[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -135,12 +168,47 @@ export function AdminTeamsRoute() {
 
     return teams.filter((team) => {
       const playerNames = team.members
-        .map((member) => players.find((player) => player.id === member.player_id)?.display_name ?? '')
+        .map((member) => {
+          const player = players.find((item) => item.id === member.player_id);
+          return player ? getPlayerLabel(player) : '';
+        })
         .join(' ');
       return [team.name, playerNames].join(' ').toLowerCase().includes(query);
     });
   }, [teamSearch, teams, players]);
+  const teamsPerPage = 8;
+  const teamPageCount = Math.max(1, Math.ceil(filteredTeams.length / teamsPerPage));
+  const visibleTeams = useMemo(
+    () =>
+      filteredTeams.slice(
+        (teamListPage - 1) * teamsPerPage,
+        teamListPage * teamsPerPage
+      ),
+    [filteredTeams, teamListPage]
+  );
   const selectedTeam = teams.find((team) => team.id === selectedTeamId) ?? null;
+  const isCreatingTeam = selectedTeam === null;
+  const isTournamentTeamLimitReached =
+    selectedTournament !== null && teams.length >= selectedTournament.expectedTeamsCount;
+  const isTeamLimitReached =
+    isTournamentTeamLimitReached && isCreatingTeam;
+  const usedRankings = useMemo(() => {
+    const rankings = new Set<number>();
+
+    teams.forEach((team) => {
+      if (team.id === selectedTeam?.id || team.ranking === null) {
+        return;
+      }
+
+      rankings.add(team.ranking);
+    });
+
+    return rankings;
+  }, [selectedTeam?.id, teams]);
+  const rankingError =
+    selectedTournament?.useRanking === true
+      ? getRankingValidationError(form.ranking, selectedTournament.expectedTeamsCount, usedRankings)
+      : null;
   const selectedPlayerIds = useMemo(
     () => [form.playerOneId, form.playerTwoId].filter(Boolean),
     [form.playerOneId, form.playerTwoId]
@@ -170,13 +238,21 @@ export function AdminTeamsRoute() {
   const filteredPlayers = useMemo(() => {
     const query = playerSearch.trim().toLowerCase();
 
-    if (!query) {
-      return players;
-    }
-
     return players.filter((player) => {
+      const isSelected = selectedPlayerIds.includes(player.id);
+      const isAssignedToOtherTeam = assignedPlayersById.has(player.id);
+
+      if (isSelected || isAssignedToOtherTeam) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
       const searchableText = [
         player.display_name,
+        getPlayerLabel(player),
         player.first_name,
         player.last_name
       ]
@@ -185,7 +261,14 @@ export function AdminTeamsRoute() {
 
       return searchableText.includes(query);
     });
-  }, [playerSearch, players]);
+  }, [assignedPlayersById, playerSearch, players, selectedPlayerIds]);
+  const availablePlayers = useMemo(
+    () =>
+      players.filter(
+        (player) => !assignedPlayersById.has(player.id) && !selectedPlayerIds.includes(player.id)
+      ),
+    [assignedPlayersById, players, selectedPlayerIds]
+  );
   const isBusy =
     createTeamMutation.isPending ||
     updateTeamMutation.isPending ||
@@ -224,6 +307,7 @@ export function AdminTeamsRoute() {
     setForm(emptyTeamForm);
     setPlayerSearch('');
     setTeamSearch('');
+    setTeamListPage(1);
     setSelectedBulkTeamIds([]);
     setLogoFile(null);
     if (logoInputRef.current) {
@@ -232,9 +316,19 @@ export function AdminTeamsRoute() {
     setFormError(null);
   }, [selectedTournamentId]);
 
+  useEffect(() => {
+    setTeamListPage(1);
+  }, [teamSearch]);
+
+  useEffect(() => {
+    if (teamListPage > teamPageCount) {
+      setTeamListPage(teamPageCount);
+    }
+  }, [teamListPage, teamPageCount]);
+
   const getPlayerName = (playerId: string): string => {
     const player = players.find((item) => item.id === playerId);
-    return player?.display_name ?? 'Giocatore sconosciuto';
+    return player ? getPlayerLabel(player) : 'Giocatore sconosciuto';
   };
 
   const handleNewTeam = () => {
@@ -273,12 +367,30 @@ export function AdminTeamsRoute() {
     }
 
     try {
+      const teamName = form.name.trim() || getTeamFallbackName(selectedPlayers);
+
+      if (!teamName) {
+        setFormError('Seleziona almeno un giocatore o inserisci un nome squadra.');
+        return;
+      }
+
+      if (isTeamLimitReached) {
+        setFormError('Numero massimo di squadre raggiunto.');
+        return;
+      }
+
+      if (selectedTournament?.useRanking && rankingError) {
+        setFormError(rankingError);
+        return;
+      }
+
       const logoUrl = logoFile ? await uploadLogoMutation.mutateAsync(logoFile) : form.logoUrl || null;
       const payload = {
         season_id: selectedSeasonId,
-        name: form.name,
-        slug: form.slug,
+        name: teamName,
+        slug: form.slug || slugify(teamName),
         logo_url: logoUrl,
+        ranking: selectedTournament?.useRanking ? Number(form.ranking) : null,
         player_ids: [form.playerOneId, form.playerTwoId].filter(Boolean)
       };
 
@@ -289,7 +401,8 @@ export function AdminTeamsRoute() {
           slug: payload.slug,
           logoUrl: payload.logo_url ?? '',
           playerOneId: payload.player_ids[0] ?? '',
-          playerTwoId: payload.player_ids[1] ?? ''
+          playerTwoId: payload.player_ids[1] ?? '',
+          ranking: payload.ranking?.toString() ?? ''
         });
         setLogoFile(null);
         if (logoInputRef.current) {
@@ -324,6 +437,107 @@ export function AdminTeamsRoute() {
 
   const handleRemovePlayer = (playerId: string) => {
     updateSelectedPlayers(selectedPlayerIds.filter((selectedPlayerId) => selectedPlayerId !== playerId));
+  };
+
+  const handleGenerateRandomTeam = () => {
+    setFormError(null);
+
+    const [firstPlayer, secondPlayer] = shuffleItems(availablePlayers);
+
+    if (isTeamLimitReached) {
+      setFormError('Numero massimo di squadre raggiunto.');
+      return;
+    }
+
+    if (!firstPlayer || !secondPlayer) {
+      setFormError('Servono almeno 2 giocatori disponibili per generare una squadra casuale.');
+      return;
+    }
+
+    const firstFreeRanking = selectedTournament?.useRanking
+      ? Array.from({ length: selectedTournament.expectedTeamsCount }, (_, index) => index + 1).find(
+          (ranking) => !usedRankings.has(ranking)
+        )
+      : null;
+
+    if (selectedTournament?.useRanking && !firstFreeRanking) {
+      setFormError('Nessun ranking disponibile.');
+      return;
+    }
+
+    const teamName = getTeamFallbackName([firstPlayer, secondPlayer]);
+    setSelectedTeamId(null);
+    setForm({
+      name: teamName,
+      slug: slugify(teamName),
+      logoUrl: '',
+      playerOneId: firstPlayer.id,
+      playerTwoId: secondPlayer.id,
+      ranking: firstFreeRanking?.toString() ?? ''
+    });
+    setPlayerSearch('');
+  };
+
+  const handleGenerateAllRandomTeams = async () => {
+    if (!selectedSeasonId || !selectedTournament) {
+      setFormError('Seleziona un torneo prima di generare le squadre.');
+      return;
+    }
+
+    setFormError(null);
+
+    const missingTeams = Math.max(selectedTournament.expectedTeamsCount - teams.length, 0);
+
+    if (missingTeams === 0) {
+      setFormError('Numero massimo di squadre raggiunto.');
+      return;
+    }
+
+    const shuffledPlayers = shuffleItems(
+      players.filter((player) => !assignedPlayersById.has(player.id))
+    );
+
+    if (shuffledPlayers.length < missingTeams * 2) {
+      setFormError(
+        `Servono ${(missingTeams * 2).toString()} giocatori disponibili per generare ${missingTeams.toString()} squadre.`
+      );
+      return;
+    }
+
+    try {
+      const freeRankings = selectedTournament.useRanking
+        ? Array.from({ length: selectedTournament.expectedTeamsCount }, (_, index) => index + 1).filter(
+            (ranking) => !usedRankings.has(ranking)
+          )
+        : [];
+
+      if (selectedTournament.useRanking && freeRankings.length < missingTeams) {
+        throw new Error("Ranking già assegnato a un'altra squadra.");
+      }
+
+      for (let index = 0; index < missingTeams; index += 1) {
+        const firstPlayer = shuffledPlayers[index * 2];
+        const secondPlayer = shuffledPlayers[index * 2 + 1];
+
+        if (!firstPlayer || !secondPlayer) {
+          throw new Error('Giocatori disponibili insufficienti.');
+        }
+
+        const teamName = getTeamFallbackName([firstPlayer, secondPlayer]);
+        await createTeamMutation.mutateAsync({
+          season_id: selectedSeasonId,
+          name: teamName,
+          slug: slugify(teamName),
+          logo_url: null,
+          ranking: selectedTournament.useRanking ? freeRankings[index] ?? null : null,
+          player_ids: [firstPlayer.id, secondPlayer.id]
+        });
+      }
+
+      handleNewTeam();
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    }
   };
 
   const handleDelete = async () => {
@@ -378,7 +592,12 @@ export function AdminTeamsRoute() {
           <p className={styles.eyebrow}>Area admin</p>
           <h1 className={styles.title}>Squadre</h1>
         </div>
-        <button className={styles.button} disabled={!selectedSeasonId} onClick={handleNewTeam} type="button">
+        <button
+          className={styles.button}
+          disabled={!selectedSeasonId || isTournamentTeamLimitReached}
+          onClick={handleNewTeam}
+          type="button"
+        >
           <FaPlus aria-hidden="true" className={styles.buttonIcon} />
           <span>Nuova squadra</span>
         </button>
@@ -403,7 +622,7 @@ export function AdminTeamsRoute() {
           </select>
         </label>
         {!tournamentsQuery.isLoading && tournamentOptions.length === 0 ? (
-          <p className={styles.muted}>Attiva un torneo prima di creare le squadre.</p>
+          <p className={styles.muted}>Crea un torneo prima di aggiungere le squadre.</p>
         ) : null}
       </div>
 
@@ -450,7 +669,7 @@ export function AdminTeamsRoute() {
             <p className={styles.muted}>Nessuna squadra trovata.</p>
           ) : null}
           <ul className={styles.list}>
-            {filteredTeams.map((team) => (
+            {visibleTeams.map((team) => (
               <li key={team.id}>
                 <div className={styles.selectableListItem}>
                   <label className={styles.bulkCheckbox}>
@@ -494,6 +713,33 @@ export function AdminTeamsRoute() {
               </li>
             ))}
           </ul>
+          {filteredTeams.length > teamsPerPage ? (
+            <div className={styles.pagination} aria-label="Paginazione squadre">
+              <button
+                className={styles.buttonSecondary}
+                disabled={teamListPage === 1}
+                onClick={() => {
+                  setTeamListPage((current) => Math.max(1, current - 1));
+                }}
+                type="button"
+              >
+                Precedente
+              </button>
+              <span>
+                {teamListPage} / {teamPageCount}
+              </span>
+              <button
+                className={styles.buttonSecondary}
+                disabled={teamListPage === teamPageCount}
+                onClick={() => {
+                  setTeamListPage((current) => Math.min(teamPageCount, current + 1));
+                }}
+                type="button"
+              >
+                Successivo
+              </button>
+            </div>
+          ) : null}
           </details>
         </aside>
 
@@ -503,6 +749,27 @@ export function AdminTeamsRoute() {
           </h2>
 
           <form className={styles.form} onSubmit={(event) => void handleSubmit(event)}>
+            <div className={styles.testActions}>
+              <button
+                className={styles.buttonSecondary}
+                disabled={isBusy || !selectedSeasonId || isTournamentTeamLimitReached}
+                onClick={handleGenerateRandomTeam}
+                type="button"
+              >
+                Genera squadra casuale
+              </button>
+              <button
+                className={styles.buttonSecondary}
+                disabled={isBusy || !selectedSeasonId || isTournamentTeamLimitReached}
+                onClick={() => void handleGenerateAllRandomTeams()}
+                type="button"
+              >
+                Genera tutte le squadre casuali
+              </button>
+            </div>
+            {isTeamLimitReached ? (
+              <p className={styles.error}>Numero massimo di squadre raggiunto.</p>
+            ) : null}
             <div className={styles.grid}>
               <label className={styles.field}>
                 <span className={styles.label}>Torneo</span>
@@ -527,30 +794,30 @@ export function AdminTeamsRoute() {
                 <span className={styles.label}>Nome squadra</span>
                 <input
                   className={styles.input}
-                  onBlur={() => {
-                    if (!form.slug) {
-                      setForm((current) => ({ ...current, slug: slugify(current.name) }));
-                    }
-                  }}
                   onChange={(event) => {
-                    setForm((current) => ({ ...current, name: event.target.value }));
+                    const name = event.target.value;
+                    setForm((current) => ({ ...current, name, slug: slugify(name) }));
                   }}
-                  required
+                  placeholder="Vuoto = nomi giocatori"
                   value={form.name}
                 />
               </label>
 
-              <label className={styles.field}>
-                <span className={styles.label}>Slug</span>
-                <input
-                  className={styles.input}
-                  onChange={(event) => {
-                    setForm((current) => ({ ...current, slug: slugify(event.target.value) }));
-                  }}
-                  required
-                  value={form.slug}
-                />
-              </label>
+              {selectedTournament?.useRanking ? (
+                <label className={styles.field}>
+                  <span className={styles.label}>Ranking</span>
+                  <input
+                    className={styles.input}
+                    min={1}
+                    onChange={(event) => {
+                      setForm((current) => ({ ...current, ranking: event.target.value }));
+                    }}
+                    type="number"
+                    value={form.ranking}
+                  />
+                  {rankingError ? <span className={styles.fieldError}>{rankingError}</span> : null}
+                </label>
+              ) : null}
 
               <div className={styles.playerPicker}>
                 <div className={styles.playerPickerHeader}>
@@ -583,57 +850,61 @@ export function AdminTeamsRoute() {
                   )}
                 </div>
 
-                <label className={styles.field}>
-                  <span className={styles.label}>Cerca giocatore</span>
-                  <input
-                    className={styles.input}
-                    onChange={(event) => {
-                      setPlayerSearch(event.target.value);
-                    }}
-                    placeholder="Cerca per nome..."
-                    value={playerSearch}
-                  />
-                </label>
-
-                <div className={styles.playerCards}>
-                  {playersQuery.isLoading ? <p className={styles.muted}>Caricamento giocatori...</p> : null}
-                  {!playersQuery.isLoading && filteredPlayers.length === 0 ? (
-                    <p className={styles.muted}>Nessun giocatore trovato</p>
-                  ) : null}
-                  {filteredPlayers.map((player) => {
-                    const isSelected = selectedPlayerIds.includes(player.id);
-                    const assignedTeamName = assignedPlayersById.get(player.id) ?? null;
-                    const isAssigned = assignedTeamName !== null;
-                    const isLimitReached = selectedPlayerIds.length >= 2 && !isSelected;
-                    const isDisabled = isAssigned || isSelected || isLimitReached;
-
-                    return (
-                      <button
-                        className={cx(
-                          styles.playerCard,
-                          isSelected && styles.playerCardSelected,
-                          isDisabled && !isSelected && styles.playerCardDisabled
-                        )}
-                        disabled={isDisabled}
-                        key={player.id}
-                        onClick={() => {
-                          handleSelectPlayer(player.id);
+                {selectedPlayerIds.length < 2 ? (
+                  <>
+                    <label className={styles.field}>
+                      <span className={styles.label}>Cerca giocatore</span>
+                      <input
+                        className={styles.input}
+                        onChange={(event) => {
+                          setPlayerSearch(event.target.value);
                         }}
-                        type="button"
-                      >
-                        <PlayerAvatar player={player} />
-                        <span className={styles.playerCardBody}>
-                          <strong>{getPlayerLabel(player)}</strong>
-                          {isSelected ? <small>Selezionato</small> : null}
-                          {isAssigned ? <small>Già assegnato a una squadra</small> : null}
-                          {!isSelected && !isAssigned && isLimitReached ? (
-                            <small>Massimo 2 giocatori</small>
-                          ) : null}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                        placeholder="Cerca per nome..."
+                        value={playerSearch}
+                      />
+                    </label>
+
+                    <div className={styles.playerCards}>
+                      {playersQuery.isLoading ? <p className={styles.muted}>Caricamento giocatori...</p> : null}
+                      {!playersQuery.isLoading && filteredPlayers.length === 0 ? (
+                        <p className={styles.muted}>Nessun giocatore disponibile</p>
+                      ) : null}
+                      {filteredPlayers.map((player) => {
+                        const isSelected = selectedPlayerIds.includes(player.id);
+                        const assignedTeamName = assignedPlayersById.get(player.id) ?? null;
+                        const isAssigned = assignedTeamName !== null;
+                        const isLimitReached = selectedPlayerIds.length >= 2 && !isSelected;
+                        const isDisabled = isAssigned || isSelected || isLimitReached;
+
+                        return (
+                          <button
+                            className={cx(
+                              styles.playerCard,
+                              isSelected && styles.playerCardSelected,
+                              isDisabled && !isSelected && styles.playerCardDisabled
+                            )}
+                            disabled={isDisabled}
+                            key={player.id}
+                            onClick={() => {
+                              handleSelectPlayer(player.id);
+                            }}
+                            type="button"
+                          >
+                            <PlayerAvatar player={player} />
+                            <span className={styles.playerCardBody}>
+                              <strong>{getPlayerLabel(player)}</strong>
+                              {isSelected ? <small>Selezionato</small> : null}
+                              {isAssigned ? <small>Già assegnato a una squadra</small> : null}
+                              {!isSelected && !isAssigned && isLimitReached ? (
+                                <small>Massimo 2 giocatori</small>
+                              ) : null}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : null}
               </div>
 
               <label className={styles.field}>
@@ -656,7 +927,11 @@ export function AdminTeamsRoute() {
             {formError ? <p className={styles.error}>{formError}</p> : null}
 
             <div className={styles.actions}>
-              <button className={styles.button} disabled={isBusy || !selectedSeasonId} type="submit">
+              <button
+                className={styles.button}
+                disabled={isBusy || !selectedSeasonId || isTeamLimitReached || Boolean(rankingError)}
+                type="submit"
+              >
                 <FaFloppyDisk aria-hidden="true" className={styles.buttonIcon} />
                 <span>Salva squadra</span>
               </button>

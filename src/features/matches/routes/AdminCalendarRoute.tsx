@@ -16,7 +16,9 @@ import {
   formatMatchDate,
   formatMatchDateTime,
   getMatchDateInputValue,
-  getMatchTimeInputValue
+  getMatchTimeOrDefault,
+  getNearestHalfHourTime,
+  halfHourTimeSlots
 } from '@/features/matches/lib/matchDateTime';
 import { usePlayersQuery } from '@/features/players/api/playersQueries';
 import type { TeamWithMembers } from '@/features/teams/api/teamsApi';
@@ -49,7 +51,7 @@ type PhaseFilter = 'all' | MatchPhase;
 
 const emptyMatchForm: MatchModalFormState = {
   date: '',
-  time: '',
+  time: getNearestHalfHourTime(),
   venue: 'GPadel Borgaro',
   status: 'scheduled',
   set1Home: '',
@@ -205,7 +207,7 @@ function matchToForm(match: MatchWithSets): MatchModalFormState {
 
   return {
     date: getMatchDateInputValue(match.scheduled_at),
-    time: getMatchTimeInputValue(match.scheduled_at),
+    time: getMatchTimeOrDefault(match.scheduled_at),
     venue: match.venue ?? defaultVenue,
     status: match.status,
     set1Home: setOne?.home_games.toString() ?? '',
@@ -902,15 +904,19 @@ export function AdminCalendarRoute() {
               </label>
               <label className={styles.field}>
                 <span className={styles.label}>Ora</span>
-                <input
-                  className={styles.input}
+                <select
+                  className={styles.select}
                   onChange={(event) => {
                     setMatchForm((current) => ({ ...current, time: event.target.value }));
                   }}
-                  step={1800}
-                  type="time"
                   value={matchForm.time}
-                />
+                >
+                  {halfHourTimeSlots.map((slot) => (
+                    <option key={slot} value={slot}>
+                      {slot}
+                    </option>
+                  ))}
+                </select>
               </label>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="match-venue-choice">

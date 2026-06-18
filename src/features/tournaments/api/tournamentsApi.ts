@@ -23,6 +23,7 @@ export type CreateTournamentInput = {
   expected_teams_count: number;
   format: TournamentFormat;
   allow_byes: boolean;
+  use_ranking: boolean;
   playoff_teams_count: number | null;
   playout_teams_count: number | null;
 };
@@ -50,6 +51,7 @@ export type UpdateTournamentCompetitionSettingsInput = {
   expected_teams_count: number;
   format: TournamentFormat;
   allow_byes: boolean;
+  use_ranking: boolean;
   playoff_teams_count: number | null;
   playout_teams_count: number | null;
 };
@@ -164,6 +166,7 @@ export async function createConfiguredTournament(
     expected_teams_count: input.expected_teams_count,
     format: input.format,
     allow_byes: input.allow_byes,
+    use_ranking: input.use_ranking,
     playoff_teams_count: input.playoff_teams_count,
     playout_teams_count: input.playout_teams_count
   };
@@ -183,6 +186,7 @@ export async function createConfiguredTournament(
         name: teamInput.name,
         slug: teamInput.slug,
         logo_url: null,
+        ranking: input.use_ranking ? teamInput.ranking : null,
         player_ids: teamInput.player_ids
       });
     }

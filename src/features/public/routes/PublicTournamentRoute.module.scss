@@ -381,6 +381,36 @@
   font-weight: 700;
 }
 
+.selectionAdminLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.6rem;
+  border: 1px solid var(--pad-public-blue-border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 86%);
+  color: var(--pad-public-navy);
+  font-size: 0.85rem;
+  font-weight: 900;
+  padding: 0.5rem 0.8rem;
+  text-decoration: none;
+}
+
+.selectionAdminLink svg {
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.selectionAdminLink:hover,
+.selectionAdminLink:focus-visible {
+  border-color: var(--pad-public-orange-border);
+  background: var(--pad-public-orange-soft);
+  color: var(--pad-public-navy);
+  outline: none;
+}
+
 .selectionSearch input {
   width: 100%;
   border: 1px solid var(--pad-public-blue-border);

@@ -76,6 +76,31 @@
   gap: 1rem;
 }
 
+.tournamentListDisclosure {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.tournamentListSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--pad-blue-soft);
+  color: var(--pad-navy);
+  cursor: pointer;
+  font-weight: 900;
+  padding: 0.8rem 0.9rem;
+}
+
+.tournamentListBody {
+  display: grid;
+  gap: 0.8rem;
+}
+
 .list {
   display: grid;
   gap: 0.5rem;
@@ -145,6 +170,12 @@
 .label {
   color: var(--color-muted);
   font-size: 0.875rem;
+}
+
+.fieldError {
+  color: var(--color-danger-text);
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .input,
@@ -319,6 +350,59 @@
   font-size: 0.95rem;
 }
 
+.wizardTeamCounters {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: end;
+  margin-left: auto;
+}
+
+.wizardTeamCounters span {
+  width: max-content;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--pad-navy);
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.3rem 0.6rem;
+}
+
+.wizardTeamList {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.wizardTeamList h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.wizardTeamRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  background: var(--color-surface);
+  padding: 0.75rem;
+}
+
+.wizardTeamRow div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.wizardTeamRow span,
+.wizardTeamRow em {
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-style: normal;
+}
+
 .wizardSummary {
   display: grid;
   gap: 0.85rem;
@@ -340,6 +424,21 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+}
+
+.pagination span {
+  color: var(--pad-navy);
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .detailTopBar {
@@ -965,6 +1064,11 @@
 
   .teamItem span {
     text-align: left;
+  }
+
+  .wizardTeamRow {
+    align-items: stretch;
+    flex-direction: column;
   }
 
 }

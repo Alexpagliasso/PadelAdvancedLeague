@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FaFloppyDisk,
   FaPenToSquare,
@@ -29,8 +29,11 @@ import { usePlayersQuery } from '@/features/players/api/playersQueries';
 import { calculateStandings, type StandingRow } from '@/features/standings/lib/standingsEngine';
 import {
   useCreateTeamMutation,
-  useTeamsBySeasonQuery
+  useDeleteTeamMutation,
+  useTeamsBySeasonQuery,
+  useUpdateTeamMutation
 } from '@/features/teams/api/teamsQueries';
+import type { TeamWithMembers } from '@/features/teams/api/teamsApi';
 import {
   useAdminTournamentsQuery,
   useCreateConfiguredTournamentMutation,
@@ -67,21 +70,16 @@ type TournamentFormState = {
   expectedTeamsCount: string;
   format: TournamentFormat;
   allowByes: boolean;
+  useRanking: boolean;
   playoffTeamsCount: string;
   playoutTeamsCount: string;
-};
-
-type QuickTeamFormState = {
-  name: string;
-  slug: string;
-  playerOneId: string;
-  playerTwoId: string;
 };
 
 type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
 type DetailTab = 'overview' | 'teams';
 
 type WizardTeamState = {
+  id?: string;
   name: string;
   playerOneId: string;
   playerTwoId: string;
@@ -102,31 +100,16 @@ const emptyTournamentForm: TournamentFormState = {
   expectedTeamsCount: '2',
   format: 'round_robin',
   allowByes: true,
+  useRanking: false,
   playoffTeamsCount: '',
   playoutTeamsCount: ''
 };
-
-const emptyQuickTeamForm: QuickTeamFormState = {
-  name: '',
-  slug: '',
-  playerOneId: '',
-  playerTwoId: ''
-};
-
-function createEmptyWizardTeams(count: number): WizardTeamState[] {
-  return Array.from({ length: count }, () => ({
-    name: '',
-    playerOneId: '',
-    playerTwoId: '',
-    ranking: ''
-  }));
-}
 
 function createEmptyWizardState(): TournamentWizardState {
   return {
     ...emptyTournamentForm,
     splitRegularSeasonRounds: true,
-    teams: createEmptyWizardTeams(2)
+    teams: []
   };
 }
 
@@ -236,6 +219,21 @@ function QuickPlayerPicker({
   onSearchChange: (value: string) => void;
   onSelect: (playerId: string) => void;
 }) {
+  if (selectedPlayer) {
+    return (
+      <div className={styles.playerPicker}>
+        <span className={styles.label}>{label}</span>
+        <span className={styles.selectedPlayerChip}>
+          <PlayerAvatar player={selectedPlayer} />
+          <strong>{getPlayerLabel(selectedPlayer)}</strong>
+          <button aria-label={`Rimuovi ${label}`} onClick={onRemove} type="button">
+            <FaXmark aria-hidden="true" />
+          </button>
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.playerPicker}>
       <label className={styles.field}>
@@ -250,35 +248,24 @@ function QuickPlayerPicker({
           value={search}
         />
       </label>
-      {selectedPlayer ? (
-        <span className={styles.selectedPlayerChip}>
-          <PlayerAvatar player={selectedPlayer} />
-          <strong>{getPlayerLabel(selectedPlayer)}</strong>
-          <button aria-label={`Rimuovi ${label}`} onClick={onRemove} type="button">
-            <FaXmark aria-hidden="true" />
-          </button>
-        </span>
-      ) : null}
-      {search.trim().length >= 2 ? (
-        <div className={styles.playerResults}>
-          {options.length > 0 ? (
-            options.map((player) => (
-              <button
-                key={player.id}
-                onClick={() => {
-                  onSelect(player.id);
-                }}
-                type="button"
-              >
-                <PlayerAvatar player={player} />
-                <span>{getPlayerLabel(player)}</span>
-              </button>
-            ))
-          ) : (
-            <p className={styles.muted}>Nessun giocatore disponibile.</p>
-          )}
-        </div>
-      ) : null}
+      <div className={styles.playerResults}>
+        {options.length > 0 ? (
+          options.map((player) => (
+            <button
+              key={player.id}
+              onClick={() => {
+                onSelect(player.id);
+              }}
+              type="button"
+            >
+              <PlayerAvatar player={player} />
+              <span>{getPlayerLabel(player)}</span>
+            </button>
+          ))
+        ) : (
+          <p className={styles.muted}>Nessun giocatore disponibile.</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -297,25 +284,39 @@ function tournamentToForm(tournament: TournamentWithSeasons | null): TournamentF
     expectedTeamsCount: tournament.expected_teams_count.toString(),
     format: tournament.format,
     allowByes: tournament.allow_byes,
+    useRanking: tournament.use_ranking,
     playoffTeamsCount: tournament.playoff_teams_count?.toString() ?? '',
     playoutTeamsCount: tournament.playout_teams_count?.toString() ?? ''
   };
 }
 
 function tournamentToWizardState(tournament: TournamentWithSeasons): TournamentWizardState {
-  const expectedTeamsCount = Math.max(tournament.expected_teams_count, 2);
-
   return {
     ...tournamentToForm(tournament),
     splitRegularSeasonRounds: true,
-    teams: createEmptyWizardTeams(expectedTeamsCount)
+    teams: []
   };
+}
+
+function teamsToWizardTeams(teams: TeamWithMembers[]): WizardTeamState[] {
+  return teams.map((team) => {
+    const sortedMembers = [...team.members].sort((first, second) => first.position - second.position);
+
+    return {
+      id: team.id,
+      name: team.name,
+      playerOneId: sortedMembers[0]?.player_id ?? '',
+      playerTwoId: sortedMembers[1]?.player_id ?? '',
+      ranking: team.ranking?.toString() ?? ''
+    };
+  });
 }
 
 type NormalizedCompetitionSettings = {
   expected_teams_count: number;
   format: TournamentFormat;
   allow_byes: boolean;
+  use_ranking: boolean;
   playoff_teams_count: number | null;
   playout_teams_count: number | null;
 };
@@ -337,6 +338,7 @@ function normalizeCompetitionSettings(
       expected_teams_count: expectedTeamsCount,
       format: form.format,
       allow_byes: false,
+      use_ranking: form.useRanking,
       playoff_teams_count: null,
       playout_teams_count: null
     };
@@ -353,6 +355,7 @@ function normalizeCompetitionSettings(
       expected_teams_count: expectedTeamsCount,
       format: form.format,
       allow_byes: form.allowByes,
+      use_ranking: form.useRanking,
       playoff_teams_count: null,
       playout_teams_count: null
     };
@@ -395,6 +398,7 @@ function normalizeCompetitionSettings(
     expected_teams_count: expectedTeamsCount,
     format: form.format,
     allow_byes: form.allowByes,
+    use_ranking: form.useRanking,
     playoff_teams_count: playoffTeamsCount,
     playout_teams_count: playoutTeamsCount
   };
@@ -408,20 +412,19 @@ export function AdminTournamentsRoute() {
   const updateTournamentStatusMutation = useUpdateTournamentStatusMutation();
   const deleteTournamentMutation = useDeleteTournamentMutation();
   const didAutoSelectTournament = useRef(false);
+  const createWizardRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const [isCreatingTournament, setIsCreatingTournament] = useState(false);
   const [tournamentSearch, setTournamentSearch] = useState('');
+  const [tournamentListPage, setTournamentListPage] = useState(1);
+  const [isTournamentListOpen, setIsTournamentListOpen] = useState(false);
   const [teamSearchInTournament, setTeamSearchInTournament] = useState('');
   const [isEditingTournament, setIsEditingTournament] = useState(false);
   const [wizardForm, setWizardForm] = useState<TournamentWizardState>(createEmptyWizardState);
   const [wizardStep, setWizardStep] = useState<WizardStep>(1);
   const [detailTab, setDetailTab] = useState<DetailTab>('overview');
-  const [quickTeamForm, setQuickTeamForm] = useState<QuickTeamFormState>(emptyQuickTeamForm);
-  const [quickPlayerOneSearch, setQuickPlayerOneSearch] = useState('');
-  const [quickPlayerTwoSearch, setQuickPlayerTwoSearch] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const [teamFormError, setTeamFormError] = useState<string | null>(null);
   const [finalPhaseError, setFinalPhaseError] = useState<string | null>(null);
   const [isTournamentDetailOpen, setIsTournamentDetailOpen] = useState(false);
 
@@ -440,6 +443,19 @@ export function AdminTournamentsRoute() {
         .includes(query)
     );
   }, [tournamentSearch, tournaments]);
+  const tournamentsPerPage = 8;
+  const tournamentPageCount = Math.max(
+    1,
+    Math.ceil(filteredTournaments.length / tournamentsPerPage)
+  );
+  const visibleTournaments = useMemo(
+    () =>
+      filteredTournaments.slice(
+        (tournamentListPage - 1) * tournamentsPerPage,
+        tournamentListPage * tournamentsPerPage
+      ),
+    [filteredTournaments, tournamentListPage]
+  );
   const players = useMemo(() => playersQuery.data ?? [], [playersQuery.data]);
   const selectedTournament =
     tournaments.find((tournament) => tournament.id === selectedTournamentId) ?? null;
@@ -451,6 +467,8 @@ export function AdminTournamentsRoute() {
   const matchesQuery = useMatchesBySeasonQuery(selectedMainSeasonId);
   const bracketsQuery = useTournamentBracketsQuery(selectedTournamentId);
   const createTeamMutation = useCreateTeamMutation(selectedMainSeasonId);
+  const updateTeamMutation = useUpdateTeamMutation(selectedMainSeasonId);
+  const deleteTeamMutation = useDeleteTeamMutation(selectedMainSeasonId);
   const generateCalendarMutation = useGenerateCalendarMutation(selectedMainSeasonId);
   const generateKnockoutMutation = useGenerateKnockoutMutation(
     selectedTournamentId,
@@ -470,7 +488,10 @@ export function AdminTournamentsRoute() {
 
     return teams.filter((team) => {
       const playerNames = team.members
-        .map((member) => players.find((player) => player.id === member.player_id)?.display_name ?? '')
+        .map((member) => {
+          const player = players.find((item) => item.id === member.player_id);
+          return player ? getPlayerLabel(player) : '';
+        })
         .join(' ');
 
       return [team.name, playerNames].join(' ').toLowerCase().includes(query);
@@ -543,6 +564,8 @@ export function AdminTournamentsRoute() {
     Boolean(selectedTournament) &&
     selectedTournament?.format !== 'knockout' &&
     isTeamRegistrationComplete &&
+    !selectedTournament?.regular_calendar_generated_at &&
+    !selectedTournament?.knockout_generated_at &&
     uniqueMatches.length === 0;
   const completionPercentage =
     uniqueMatches.length > 0 ? Math.round((playedMatchesCount / uniqueMatches.length) * 100) : 0;
@@ -565,6 +588,8 @@ export function AdminTournamentsRoute() {
     updateTournamentStatusMutation.isPending ||
     deleteTournamentMutation.isPending ||
     createTeamMutation.isPending ||
+    updateTeamMutation.isPending ||
+    deleteTeamMutation.isPending ||
     generateCalendarMutation.isPending ||
     generateKnockoutMutation.isPending ||
     generatePlayoffPlayoutMutation.isPending;
@@ -575,6 +600,30 @@ export function AdminTournamentsRoute() {
       setSelectedTournamentId(tournaments[0]?.id ?? null);
     }
   }, [isCreatingTournament, selectedTournamentId, tournaments]);
+
+  useEffect(() => {
+    setTournamentListPage(1);
+  }, [tournamentSearch]);
+
+  useEffect(() => {
+    if (tournamentListPage > tournamentPageCount) {
+      setTournamentListPage(tournamentPageCount);
+    }
+  }, [tournamentListPage, tournamentPageCount]);
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 768px)');
+    const syncListState = () => {
+      setIsTournamentListOpen(query.matches);
+    };
+
+    syncListState();
+    query.addEventListener('change', syncListState);
+
+    return () => {
+      query.removeEventListener('change', syncListState);
+    };
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 768px)');
@@ -592,19 +641,18 @@ export function AdminTournamentsRoute() {
 
   useEffect(() => {
     if (selectedTournament) {
-      setWizardForm(tournamentToWizardState(selectedTournament));
+      setWizardForm({
+        ...tournamentToWizardState(selectedTournament),
+        teams: teamsToWizardTeams(teams)
+      });
       setWizardStep(1);
       setIsTournamentDetailOpen(window.matchMedia('(min-width: 768px)').matches);
     }
-    setQuickTeamForm(emptyQuickTeamForm);
-    setQuickPlayerOneSearch('');
-    setQuickPlayerTwoSearch('');
-    setTeamFormError(null);
     setFinalPhaseError(null);
     setDetailTab('overview');
     setIsEditingTournament(false);
     setTeamSearchInTournament('');
-  }, [selectedTournament]);
+  }, [selectedTournament, teams]);
 
   const handleCreateTournament = () => {
     didAutoSelectTournament.current = true;
@@ -613,57 +661,20 @@ export function AdminTournamentsRoute() {
     setIsEditingTournament(true);
     setWizardForm(createEmptyWizardState());
     setWizardStep(1);
-    setQuickTeamForm(emptyQuickTeamForm);
-    setQuickPlayerOneSearch('');
-    setQuickPlayerTwoSearch('');
     setFormError(null);
-    setTeamFormError(null);
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      setIsTournamentListOpen(false);
+    }
+    window.setTimeout(() => {
+      createWizardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      createWizardRef.current?.focus();
+    }, 0);
   };
 
   const getPlayerName = (playerId: string): string => {
     const player = players.find((item) => item.id === playerId);
-    return player?.display_name ?? 'Giocatore';
+    return player ? getPlayerLabel(player) : 'Giocatore';
   };
-
-  const assignedPlayerIds = useMemo(() => {
-    const ids = new Set<string>();
-
-    teams.forEach((team) => {
-      team.members.forEach((member) => {
-        ids.add(member.player_id);
-      });
-    });
-
-    return ids;
-  }, [teams]);
-
-  const getAvailableQuickPlayers = (query: string, currentPlayerId: string, otherPlayerId: string) => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    if (normalizedQuery.length < 2) {
-      return [];
-    }
-
-    return players
-      .filter((player) => {
-        if (player.id === otherPlayerId) {
-          return false;
-        }
-
-        if (assignedPlayerIds.has(player.id) && player.id !== currentPlayerId) {
-          return false;
-        }
-
-        return [player.display_name, player.first_name, player.last_name]
-          .join(' ')
-          .toLowerCase()
-          .includes(normalizedQuery);
-      })
-      .slice(0, 6);
-  };
-
-  const getSelectedQuickPlayer = (playerId: string): Player | null =>
-    players.find((player) => player.id === playerId) ?? null;
 
   const getTeamName = (teamId: string | null): string => {
     if (!teamId) {
@@ -671,48 +682,6 @@ export function AdminTournamentsRoute() {
     }
 
     return teams.find((team) => team.id === teamId)?.name ?? 'Squadra';
-  };
-
-  const handleSubmitQuickTeam = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setTeamFormError(null);
-
-    if (!selectedMainSeasonId) {
-      setTeamFormError('Questo torneo non è ancora pronto per gestire le squadre.');
-      return;
-    }
-
-    if (
-      quickTeamForm.playerOneId &&
-      quickTeamForm.playerTwoId &&
-      quickTeamForm.playerOneId === quickTeamForm.playerTwoId
-    ) {
-      setTeamFormError('Lo stesso giocatore non puo occupare entrambe le posizioni.');
-      return;
-    }
-
-    if (!quickTeamForm.playerOneId || !quickTeamForm.playerTwoId) {
-      setTeamFormError('Seleziona due giocatori per creare la squadra.');
-      return;
-    }
-
-    try {
-      const fallbackName = `${getPlayerName(quickTeamForm.playerOneId)} / ${getPlayerName(quickTeamForm.playerTwoId)}`;
-      const teamName = quickTeamForm.name.trim() || fallbackName;
-
-      await createTeamMutation.mutateAsync({
-        season_id: selectedMainSeasonId,
-        name: teamName,
-        slug: quickTeamForm.slug || slugify(teamName),
-        logo_url: null,
-        player_ids: [quickTeamForm.playerOneId, quickTeamForm.playerTwoId].filter(Boolean)
-      });
-      setQuickTeamForm(emptyQuickTeamForm);
-      setQuickPlayerOneSearch('');
-      setQuickPlayerTwoSearch('');
-    } catch (error) {
-      setTeamFormError(getErrorMessage(error));
-    }
   };
 
   const handleSubmitTournamentEdit = async (input: CreateConfiguredTournamentInput) => {
@@ -723,6 +692,10 @@ export function AdminTournamentsRoute() {
     setFormError(null);
 
     try {
+      const effectiveUseRanking = isFormulaLocked
+        ? selectedTournament.use_ranking
+        : input.use_ranking;
+
       await updateTournamentMutation.mutateAsync({
         id: selectedTournament.id,
         name: input.name,
@@ -735,6 +708,7 @@ export function AdminTournamentsRoute() {
           : input.expected_teams_count,
         format: isFormulaLocked ? selectedTournament.format : input.format,
         allow_byes: isFormulaLocked ? selectedTournament.allow_byes : input.allow_byes,
+        use_ranking: effectiveUseRanking,
         playoff_teams_count: isFormulaLocked
           ? selectedTournament.playoff_teams_count
           : input.playoff_teams_count,
@@ -742,6 +716,40 @@ export function AdminTournamentsRoute() {
           ? selectedTournament.playout_teams_count
           : input.playout_teams_count
       });
+
+      if (selectedMainSeasonId) {
+        const nextExistingTeamIds = new Set(
+          wizardForm.teams.map((team) => team.id).filter((teamId): teamId is string => Boolean(teamId))
+        );
+        const teamsToDelete = teams.filter((team) => !nextExistingTeamIds.has(team.id));
+
+        for (const team of teamsToDelete) {
+          await deleteTeamMutation.mutateAsync(team.id);
+        }
+
+        for (const [index, team] of wizardForm.teams.entries()) {
+          const fallbackName =
+            team.playerOneId && team.playerTwoId
+              ? `${getPlayerName(team.playerOneId)} / ${getPlayerName(team.playerTwoId)}`
+              : `Squadra ${String(index + 1)}`;
+          const teamName = team.name.trim() || fallbackName;
+          const payload = {
+            season_id: selectedMainSeasonId,
+            name: teamName,
+            slug: slugify(teamName) || `squadra-${String(index + 1)}`,
+            logo_url: teams.find((item) => item.id === team.id)?.logo_url ?? null,
+            ranking: effectiveUseRanking ? Number(team.ranking) : null,
+            player_ids: [team.playerOneId, team.playerTwoId].filter(Boolean)
+          };
+
+          if (team.id) {
+            await updateTeamMutation.mutateAsync({ id: team.id, ...payload });
+          } else {
+            await createTeamMutation.mutateAsync(payload);
+          }
+        }
+      }
+
       setIsEditingTournament(false);
     } catch (error) {
       setFormError(getErrorMessage(error));
@@ -792,10 +800,36 @@ export function AdminTournamentsRoute() {
           return;
         }
 
+        if (selectedTournament.use_ranking) {
+          const usedRankings = new Set<number>();
+
+          for (const team of teams) {
+            const ranking = team.ranking;
+
+            if (!Number.isInteger(ranking) || ranking === null || ranking < 1 || ranking > expectedTeamsCount) {
+              setFormError(`Il ranking deve essere compreso tra 1 e ${expectedTeamsCount.toString()}.`);
+              return;
+            }
+
+            if (usedRankings.has(ranking)) {
+              setFormError("Ranking già assegnato a un'altra squadra.");
+              return;
+            }
+
+            usedRankings.add(ranking);
+          }
+        }
+
         if (uniqueMatches.length === 0) {
           if (selectedTournament.format === 'knockout') {
             const seedStandings: StandingRow[] = [...teams]
-              .sort((first, second) => first.name.localeCompare(second.name))
+              .sort((first, second) => {
+                if (selectedTournament.use_ranking) {
+                  return (first.ranking ?? Number.MAX_SAFE_INTEGER) - (second.ranking ?? Number.MAX_SAFE_INTEGER);
+                }
+
+                return first.name.localeCompare(second.name);
+              })
               .map((team, index) => ({
                 teamId: team.id,
                 teamName: team.name,
@@ -930,49 +964,93 @@ export function AdminTournamentsRoute() {
             <FaPlus aria-hidden="true" className={styles.buttonIcon} />
             <span>Crea nuovo torneo</span>
           </button>
-          <label className={cx(styles.field, styles.tournamentSearchField)}>
-            <span className={styles.label}>Cerca torneo</span>
-            <input
-              className={styles.input}
-              onChange={(event) => {
-                setTournamentSearch(event.target.value);
-              }}
-              placeholder="Nome, stato..."
-              type="search"
-              value={tournamentSearch}
-            />
-          </label>
-          <h2 className={styles.panelTitle}>Lista tornei</h2>
-          {tournamentsQuery.isLoading ? <p className={styles.muted}>Caricamento...</p> : null}
-          {tournamentsQuery.isError ? (
-            <p className={styles.error}>{getErrorMessage(tournamentsQuery.error)}</p>
-          ) : null}
-          {!tournamentsQuery.isLoading && tournaments.length === 0 ? (
-            <p className={styles.muted}>Nessun torneo creato.</p>
-          ) : null}
-          <ul className={styles.list}>
-            {filteredTournaments.map((tournament) => (
-              <li key={tournament.id}>
-                <button
-                  className={cx(
-                    styles.listButton,
-                    tournament.id === selectedTournamentId && styles.listButtonActive
-                  )}
-                  onClick={() => {
-                    setIsCreatingTournament(false);
-                    setSelectedTournamentId(tournament.id);
+          <details
+            className={styles.tournamentListDisclosure}
+            onToggle={(event) => {
+              setIsTournamentListOpen(event.currentTarget.open);
+            }}
+            open={isTournamentListOpen}
+          >
+            <summary className={styles.tournamentListSummary}>Lista tornei</summary>
+            <div className={styles.tournamentListBody}>
+              <label className={cx(styles.field, styles.tournamentSearchField)}>
+                <span className={styles.label}>Cerca torneo</span>
+                <input
+                  className={styles.input}
+                  onChange={(event) => {
+                    setTournamentSearch(event.target.value);
                   }}
-                  type="button"
-                >
-                  <strong>{tournament.name}</strong>
-                  <br />
-                  <span className={styles.muted}>
-                    {getTournamentStatusLabel(tournament.status)}
+                  placeholder="Nome, stato..."
+                  type="search"
+                  value={tournamentSearch}
+                />
+              </label>
+              {tournamentsQuery.isLoading ? <p className={styles.muted}>Caricamento...</p> : null}
+              {tournamentsQuery.isError ? (
+                <p className={styles.error}>{getErrorMessage(tournamentsQuery.error)}</p>
+              ) : null}
+              {!tournamentsQuery.isLoading && tournaments.length === 0 ? (
+                <p className={styles.muted}>Nessun torneo creato.</p>
+              ) : null}
+              {!tournamentsQuery.isLoading &&
+              tournaments.length > 0 &&
+              filteredTournaments.length === 0 ? (
+                <p className={styles.muted}>Nessun torneo trovato.</p>
+              ) : null}
+              <ul className={styles.list}>
+                {visibleTournaments.map((tournament) => (
+                  <li key={tournament.id}>
+                    <button
+                      className={cx(
+                        styles.listButton,
+                        tournament.id === selectedTournamentId && styles.listButtonActive
+                      )}
+                      onClick={() => {
+                        setIsCreatingTournament(false);
+                        setSelectedTournamentId(tournament.id);
+                      }}
+                      type="button"
+                    >
+                      <strong>{tournament.name}</strong>
+                      <br />
+                      <span className={styles.muted}>
+                        {getTournamentStatusLabel(tournament.status)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {filteredTournaments.length > tournamentsPerPage ? (
+                <div className={styles.pagination} aria-label="Paginazione tornei">
+                  <button
+                    className={styles.buttonSecondary}
+                    disabled={tournamentListPage === 1}
+                    onClick={() => {
+                      setTournamentListPage((current) => Math.max(1, current - 1));
+                    }}
+                    type="button"
+                  >
+                    Precedenti
+                  </button>
+                  <span>
+                    {tournamentListPage} / {tournamentPageCount}
                   </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <button
+                    className={styles.buttonSecondary}
+                    disabled={tournamentListPage === tournamentPageCount}
+                    onClick={() => {
+                      setTournamentListPage((current) =>
+                        Math.min(tournamentPageCount, current + 1)
+                      );
+                    }}
+                    type="button"
+                  >
+                    Successivi
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </details>
         </aside>
 
         <section className={styles.panel}>
@@ -1055,7 +1133,10 @@ export function AdminTournamentsRoute() {
                     onClick={() => {
                       setDetailTab('overview');
                       if (!isEditingTournament) {
-                        setWizardForm(tournamentToWizardState(selectedTournament));
+                        setWizardForm({
+                          ...tournamentToWizardState(selectedTournament),
+                          teams: teamsToWizardTeams(teams)
+                        });
                         setWizardStep(1);
                       }
                       setIsEditingTournament((current) => !current);
@@ -1093,15 +1174,17 @@ export function AdminTournamentsRoute() {
             </details>
           ) : null}
           {!selectedTournament && isCreatingTournament ? (
-            <TournamentCreationWizard
-              form={wizardForm}
-              isBusy={isBusy}
-              onChange={setWizardForm}
-              onSubmit={(input) => void handleCreateConfiguredTournament(input)}
-              players={players}
-              setStep={setWizardStep}
-              step={wizardStep}
-            />
+            <div ref={createWizardRef} tabIndex={-1}>
+              <TournamentCreationWizard
+                form={wizardForm}
+                isBusy={isBusy}
+                onChange={setWizardForm}
+                onSubmit={(input) => void handleCreateConfiguredTournament(input)}
+                players={players}
+                setStep={setWizardStep}
+                step={wizardStep}
+              />
+            </div>
           ) : !selectedTournament ? (
             <div className={styles.emptyState}>
               <h3>Seleziona un torneo</h3>
@@ -1371,9 +1454,9 @@ export function AdminTournamentsRoute() {
                                           {bracketMatch.match_id ? (
                                             <Link
                                               className={styles.inlineLink}
-                                              to={`/admin/matches/${bracketMatch.match_id}/edit`}
+                                              to="/admin/calendar"
                                             >
-                                              Modifica risultato
+                                              Apri calendario
                                             </Link>
                                           ) : null}
                                         </article>
@@ -1486,101 +1569,6 @@ export function AdminTournamentsRoute() {
                 ))}
               </ul>
 
-              {isEditingTournament ? (
-              <form className={styles.form} onSubmit={(event) => void handleSubmitQuickTeam(event)}>
-                <h3 className={styles.sectionTitle}>Aggiungi squadra</h3>
-                <div className={styles.grid}>
-                  <label className={styles.field}>
-                    <span className={styles.label}>Nome squadra</span>
-                    <input
-                      className={styles.input}
-                      onBlur={() => {
-                        if (!quickTeamForm.slug) {
-                          setQuickTeamForm((current) => ({
-                            ...current,
-                            slug: slugify(current.name)
-                          }));
-                        }
-                      }}
-                      onChange={(event) => {
-                        setQuickTeamForm((current) => ({
-                          ...current,
-                          name: event.target.value
-                        }));
-                      }}
-                      value={quickTeamForm.name}
-                    />
-                  </label>
-
-                  <label className={styles.field}>
-                    <span className={styles.label}>Slug</span>
-                    <input
-                      className={styles.input}
-                      onChange={(event) => {
-                        setQuickTeamForm((current) => ({
-                          ...current,
-                          slug: slugify(event.target.value)
-                        }));
-                      }}
-                      placeholder="Generato automaticamente se vuoto"
-                      value={quickTeamForm.slug}
-                    />
-                  </label>
-                </div>
-
-                <div className={styles.grid}>
-                  <QuickPlayerPicker
-                    label="Giocatore 1"
-                    onRemove={() => {
-                      setQuickTeamForm((current) => ({ ...current, playerOneId: '' }));
-                    }}
-                    onSearchChange={setQuickPlayerOneSearch}
-                    onSelect={(playerId) => {
-                      setQuickTeamForm((current) => ({ ...current, playerOneId: playerId }));
-                      setQuickPlayerOneSearch('');
-                    }}
-                    options={getAvailableQuickPlayers(
-                      quickPlayerOneSearch,
-                      quickTeamForm.playerOneId,
-                      quickTeamForm.playerTwoId
-                    )}
-                    search={quickPlayerOneSearch}
-                    selectedPlayer={getSelectedQuickPlayer(quickTeamForm.playerOneId)}
-                  />
-                  <QuickPlayerPicker
-                    label="Giocatore 2"
-                    onRemove={() => {
-                      setQuickTeamForm((current) => ({ ...current, playerTwoId: '' }));
-                    }}
-                    onSearchChange={setQuickPlayerTwoSearch}
-                    onSelect={(playerId) => {
-                      setQuickTeamForm((current) => ({ ...current, playerTwoId: playerId }));
-                      setQuickPlayerTwoSearch('');
-                    }}
-                    options={getAvailableQuickPlayers(
-                      quickPlayerTwoSearch,
-                      quickTeamForm.playerTwoId,
-                      quickTeamForm.playerOneId
-                    )}
-                    search={quickPlayerTwoSearch}
-                    selectedPlayer={getSelectedQuickPlayer(quickTeamForm.playerTwoId)}
-                  />
-                </div>
-
-                {teamFormError ? <p className={styles.error}>{teamFormError}</p> : null}
-
-                <div className={styles.actions}>
-                  <button
-                    className={styles.buttonSecondary}
-                    disabled={isBusy || !selectedMainSeasonId}
-                    type="submit"
-                  >
-                    <FaPlus aria-hidden="true" className={styles.buttonIcon} />
-                    <span>Aggiungi squadra</span>
-                  </button>
-                </div>
-              </form>
-              ) : null}
                 </>
               ) : null}
             </div>
@@ -1615,6 +1603,14 @@ function TournamentCreationWizard({
   submitButtonId?: string;
 }) {
   const [wizardError, setWizardError] = useState<string | null>(null);
+  const [draftTeam, setDraftTeam] = useState<WizardTeamState>({
+    name: '',
+    playerOneId: '',
+    playerTwoId: '',
+    ranking: ''
+  });
+  const [draftPlayerOneSearch, setDraftPlayerOneSearch] = useState('');
+  const [draftPlayerTwoSearch, setDraftPlayerTwoSearch] = useState('');
   const isEditMode = mode === 'edit';
   const selectedPlayerIds = form.teams.flatMap((team) =>
     [team.playerOneId, team.playerTwoId].filter(Boolean)
@@ -1628,43 +1624,69 @@ function TournamentCreationWizard({
     { id: 5, label: 'Attivazione' },
     { id: 6, label: 'Riepilogo' }
   ];
-  const stepOrder: WizardStep[] = isEditMode ? [1, 2, 3, 6] : [1, 2, 3, 4, 5, 6];
+  const stepOrder: WizardStep[] = [1, 2, 3, 4, 5, 6];
   const stepItems = allStepItems.filter((item) => stepOrder.includes(item.id));
+  const draftRankingNumber = Number(draftTeam.ranking);
+  const usedDraftRankings = new Set(
+    form.teams
+      .map((team) => Number(team.ranking))
+      .filter((rankingValue) => Number.isInteger(rankingValue))
+  );
+  const isWizardTeamLimitReached =
+    expectedTeamsCount > 0 && form.teams.length >= expectedTeamsCount;
+  const draftRankingRangeError =
+    form.useRanking &&
+    draftTeam.ranking.trim().length > 0 &&
+    (!Number.isInteger(draftRankingNumber) ||
+      draftRankingNumber < 1 ||
+      draftRankingNumber > expectedTeamsCount);
+  const isDraftRankingValid =
+    !form.useRanking ||
+    (Number.isInteger(draftRankingNumber) &&
+      draftRankingNumber >= 1 &&
+      draftRankingNumber <= expectedTeamsCount &&
+      !usedDraftRankings.has(draftRankingNumber));
+  const isDraftRankingDuplicate =
+    form.useRanking &&
+    draftTeam.ranking.trim().length > 0 &&
+    Number.isInteger(draftRankingNumber) &&
+    usedDraftRankings.has(draftRankingNumber);
 
   const updateForm = (updater: (current: TournamentWizardState) => TournamentWizardState) => {
     onChange(updater);
   };
 
-  const resizeTeams = (count: number) => {
-    updateForm((current) => {
-      const nextTeams = [...current.teams];
+  const getSelectedWizardPlayer = (playerId: string): Player | null =>
+    players.find((player) => player.id === playerId) ?? null;
 
-      while (nextTeams.length < count) {
-        nextTeams.push({ name: '', playerOneId: '', playerTwoId: '', ranking: '' });
-      }
-
-      return {
-        ...current,
-        teams: nextTeams.slice(0, count)
-      };
-    });
-  };
-
-  const getAvailablePlayers = (teamIndex: number, slot: 'one' | 'two') => {
-    const currentTeam = form.teams[teamIndex];
-    const currentPlayerId = slot === 'one' ? currentTeam?.playerOneId : currentTeam?.playerTwoId;
-    const otherCurrentPlayerId = slot === 'one' ? currentTeam?.playerTwoId : currentTeam?.playerOneId;
+  const getAvailableWizardPlayers = (
+    search: string,
+    currentPlayerId: string,
+    otherDraftPlayerId: string
+  ): Player[] => {
+    const query = search.trim().toLowerCase();
 
     return players.filter((player) => {
       if (player.id === currentPlayerId) {
         return true;
       }
 
-      if (player.id === otherCurrentPlayerId) {
+      if (player.id === otherDraftPlayerId) {
         return false;
       }
 
-      return !selectedPlayerIds.includes(player.id);
+      if (selectedPlayerIds.includes(player.id)) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return [getPlayerLabel(player), player.first_name, player.last_name]
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
     });
   };
 
@@ -1713,12 +1735,16 @@ function TournamentCreationWizard({
       normalizeCompetitionSettings(form);
     }
 
-    if (!isEditMode && (step === 4 || step === 6)) {
+    if (step === 4 || step === 6) {
       const settings = normalizeCompetitionSettings(form);
       const completedTeams = getCompletedWizardTeams();
 
       const usedPlayers = new Set<string>();
       const usedRankings = new Set<number>();
+
+      if (completedTeams.length > settings.expected_teams_count) {
+        throw new Error('Numero massimo di squadre raggiunto.');
+      }
 
       completedTeams.forEach((team, index) => {
         if (!team.playerOneId || !team.playerTwoId) {
@@ -1737,15 +1763,15 @@ function TournamentCreationWizard({
           usedPlayers.add(playerId);
         });
 
-        if (settings.format === 'knockout') {
+        if (settings.use_ranking) {
           const ranking = Number(team.ranking);
 
           if (!Number.isInteger(ranking) || ranking < 1 || ranking > settings.expected_teams_count) {
-            throw new Error(`Inserisci un ranking valido per la squadra ${String(index + 1)}.`);
+            throw new Error(`Il ranking deve essere compreso tra 1 e ${settings.expected_teams_count.toString()}.`);
           }
 
           if (usedRankings.has(ranking)) {
-            throw new Error('Il ranking deve essere univoco per torneo.');
+            throw new Error("Ranking già assegnato a un'altra squadra.");
           }
 
           usedRankings.add(ranking);
@@ -1768,7 +1794,7 @@ function TournamentCreationWizard({
             name,
             slug: slugify(name) || `squadra-${String(index + 1)}`,
             player_ids: [team.playerOneId, team.playerTwoId] as [string, string],
-            ranking: settings.format === 'knockout' ? Number(team.ranking) : null
+            ranking: settings.use_ranking ? Number(team.ranking) : null
           };
         });
 
@@ -1802,6 +1828,60 @@ function TournamentCreationWizard({
     const currentIndex = stepOrder.indexOf(step);
     const previousStep = stepOrder[Math.max(currentIndex - 1, 0)] ?? step;
     setStep(previousStep);
+  };
+
+  const handleAddDraftTeam = () => {
+    setWizardError(null);
+
+    try {
+      const settings = normalizeCompetitionSettings(form);
+
+      if (!draftTeam.playerOneId || !draftTeam.playerTwoId) {
+        throw new Error('Seleziona entrambi i giocatori.');
+      }
+
+      if (draftTeam.playerOneId === draftTeam.playerTwoId) {
+        throw new Error('La squadra usa due volte lo stesso giocatore.');
+      }
+
+      if (form.teams.length >= settings.expected_teams_count) {
+        throw new Error('Numero massimo di squadre raggiunto.');
+      }
+
+      if (settings.use_ranking) {
+        const ranking = Number(draftTeam.ranking);
+        const usedRankings = new Set(
+          form.teams
+            .map((team) => Number(team.ranking))
+            .filter((rankingValue) => Number.isInteger(rankingValue))
+        );
+
+        if (!Number.isInteger(ranking) || ranking < 1 || ranking > settings.expected_teams_count) {
+          throw new Error(`Il ranking deve essere compreso tra 1 e ${settings.expected_teams_count.toString()}.`);
+        }
+
+        if (usedRankings.has(ranking)) {
+          throw new Error("Ranking già assegnato a un'altra squadra.");
+        }
+      }
+
+      updateForm((current) => ({
+        ...current,
+        teams: [...current.teams, draftTeam]
+      }));
+      setDraftTeam({ name: '', playerOneId: '', playerTwoId: '', ranking: '' });
+      setDraftPlayerOneSearch('');
+      setDraftPlayerTwoSearch('');
+    } catch (error) {
+      setWizardError(getErrorMessage(error));
+    }
+  };
+
+  const handleRemoveWizardTeam = (teamIndex: number) => {
+    updateForm((current) => ({
+      ...current,
+      teams: current.teams.filter((_, index) => index !== teamIndex)
+    }));
   };
 
   const handleSubmit = () => {
@@ -1878,15 +1958,10 @@ function TournamentCreationWizard({
                   disabled={isEditMode && locked}
                   min={2}
                   onChange={(event) => {
-                    const count = Math.max(Number(event.target.value) || 0, 0);
                     updateForm((current) => ({
                       ...current,
                       expectedTeamsCount: event.target.value
                     }));
-
-                    if (count >= 0) {
-                      resizeTeams(count);
-                    }
                   }}
                   type="number"
                   value={form.expectedTeamsCount}
@@ -2001,6 +2076,21 @@ function TournamentCreationWizard({
               </label>
             ) : null}
 
+            <label className={styles.checkboxRow}>
+              <input
+                checked={form.useRanking}
+                disabled={isEditMode && locked}
+                onChange={(event) => {
+                  updateForm((current) => ({
+                    ...current,
+                    useRanking: event.target.checked
+                  }));
+                }}
+                type="checkbox"
+              />
+              Utilizza ranking
+            </label>
+
             {form.format === 'group_playoff_playout' ? (
               <div className={styles.grid}>
                 <label className={styles.field}>
@@ -2043,101 +2133,148 @@ function TournamentCreationWizard({
 
         {step === 4 ? (
           <div className={styles.wizardTeams}>
-            {form.teams.map((team, teamIndex) => (
-              <section className={styles.wizardTeamCard} key={teamIndex}>
-                <h3>Squadra {teamIndex + 1}</h3>
-                <div className={styles.grid}>
+            <div className={styles.wizardTeamCounters} aria-live="polite">
+              <span>Squadre iscritte: {form.teams.length}</span>
+              <span>Squadre mancanti: {Math.max(expectedTeamsCount - form.teams.length, 0)}</span>
+            </div>
+            {isWizardTeamLimitReached ? (
+              <p className={styles.fieldError}>Numero massimo di squadre raggiunto.</p>
+            ) : null}
+
+            <section className={styles.wizardTeamCard}>
+              <h3>Aggiungi squadra</h3>
+              <div className={styles.grid}>
+                <label className={styles.field}>
+                  <span className={styles.label}>Nome squadra opzionale</span>
+                  <input
+                    className={styles.input}
+                    onChange={(event) => {
+                      setDraftTeam((current) => ({ ...current, name: event.target.value }));
+                    }}
+                    placeholder="Vuoto = nomi giocatori"
+                    value={draftTeam.name}
+                  />
+                </label>
+
+                {form.useRanking ? (
                   <label className={styles.field}>
-                    <span className={styles.label}>Nome squadra opzionale</span>
+                    <span className={styles.label}>Ranking</span>
                     <input
                       className={styles.input}
+                      min={1}
                       onChange={(event) => {
-                        updateForm((current) => ({
-                          ...current,
-                          teams: current.teams.map((item, index) =>
-                            index === teamIndex ? { ...item, name: event.target.value } : item
-                          )
-                        }));
+                        setDraftTeam((current) => ({ ...current, ranking: event.target.value }));
                       }}
-                      placeholder="Vuoto = nomi giocatori"
-                      value={team.name}
+                      type="number"
+                      value={draftTeam.ranking}
                     />
+                    {isDraftRankingDuplicate ? (
+                      <span className={styles.fieldError}>
+                        Ranking già assegnato a un'altra squadra.
+                      </span>
+                    ) : null}
+                    {draftRankingRangeError ? (
+                      <span className={styles.fieldError}>
+                        Il ranking deve essere compreso tra 1 e {expectedTeamsCount.toString()}.
+                      </span>
+                    ) : null}
                   </label>
+                ) : null}
+              </div>
 
-                  {form.format === 'knockout' ? (
-                    <label className={styles.field}>
-                      <span className={styles.label}>Ranking</span>
-                      <input
-                        className={styles.input}
-                        min={1}
-                        onChange={(event) => {
-                          updateForm((current) => ({
-                            ...current,
-                            teams: current.teams.map((item, index) =>
-                              index === teamIndex ? { ...item, ranking: event.target.value } : item
-                            )
-                          }));
-                        }}
-                        type="number"
-                        value={team.ranking}
-                      />
-                    </label>
-                  ) : null}
-                </div>
+              <div className={styles.grid}>
+                <QuickPlayerPicker
+                  label="Giocatore 1"
+                  onRemove={() => {
+                    setDraftTeam((current) => ({ ...current, playerOneId: '' }));
+                  }}
+                  onSearchChange={setDraftPlayerOneSearch}
+                  onSelect={(playerId) => {
+                    setDraftTeam((current) => ({ ...current, playerOneId: playerId }));
+                    setDraftPlayerOneSearch('');
+                  }}
+                  options={getAvailableWizardPlayers(
+                    draftPlayerOneSearch,
+                    draftTeam.playerOneId,
+                    draftTeam.playerTwoId
+                  )}
+                  search={draftPlayerOneSearch}
+                  selectedPlayer={getSelectedWizardPlayer(draftTeam.playerOneId)}
+                />
+                <QuickPlayerPicker
+                  label="Giocatore 2"
+                  onRemove={() => {
+                    setDraftTeam((current) => ({ ...current, playerTwoId: '' }));
+                  }}
+                  onSearchChange={setDraftPlayerTwoSearch}
+                  onSelect={(playerId) => {
+                    setDraftTeam((current) => ({ ...current, playerTwoId: playerId }));
+                    setDraftPlayerTwoSearch('');
+                  }}
+                  options={getAvailableWizardPlayers(
+                    draftPlayerTwoSearch,
+                    draftTeam.playerTwoId,
+                    draftTeam.playerOneId
+                  )}
+                  search={draftPlayerTwoSearch}
+                  selectedPlayer={getSelectedWizardPlayer(draftTeam.playerTwoId)}
+                />
+              </div>
 
-                <div className={styles.grid}>
-                  <label className={styles.field}>
-                    <span className={styles.label}>Giocatore 1</span>
-                    <select
-                      className={styles.select}
-                      onChange={(event) => {
-                        updateForm((current) => ({
-                          ...current,
-                          teams: current.teams.map((item, index) =>
-                            index === teamIndex
-                              ? { ...item, playerOneId: event.target.value }
-                              : item
-                          )
-                        }));
+              <button
+                className={styles.button}
+                disabled={
+                  !draftTeam.playerOneId ||
+                  !draftTeam.playerTwoId ||
+                  !isDraftRankingValid ||
+                  isWizardTeamLimitReached
+                }
+                onClick={handleAddDraftTeam}
+                type="button"
+              >
+                <FaPlus aria-hidden="true" className={styles.buttonIcon} />
+                <span>Aggiungi squadra</span>
+              </button>
+            </section>
+
+            <div className={styles.wizardTeamList}>
+              <h3>Squadre già aggiunte</h3>
+              {form.teams.length === 0 ? (
+                <p className={styles.muted}>Nessuna squadra aggiunta.</p>
+              ) : null}
+              {form.teams.map((team, teamIndex) => {
+                const fallbackName =
+                  team.playerOneId && team.playerTwoId
+                    ? `${getPlayerNameById(team.playerOneId)} / ${getPlayerNameById(team.playerTwoId)}`
+                    : `Squadra ${String(teamIndex + 1)}`;
+
+                return (
+                  <article
+                    className={styles.wizardTeamRow}
+                    key={`${team.playerOneId}-${team.playerTwoId}-${teamIndex.toString()}`}
+                  >
+                    <div>
+                      <strong>{team.name.trim() || fallbackName}</strong>
+                      <span>
+                        {getPlayerNameById(team.playerOneId)} / {getPlayerNameById(team.playerTwoId)}
+                      </span>
+                      {form.useRanking ? <em>Ranking {team.ranking}</em> : null}
+                    </div>
+                    <button
+                      aria-label={`Elimina ${team.name.trim() || fallbackName}`}
+                      className={styles.buttonDanger}
+                      onClick={() => {
+                        handleRemoveWizardTeam(teamIndex);
                       }}
-                      value={team.playerOneId}
+                      type="button"
                     >
-                      <option value="">Seleziona giocatore</option>
-                      {getAvailablePlayers(teamIndex, 'one').map((player) => (
-                        <option key={player.id} value={player.id}>
-                          {getPlayerLabel(player)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className={styles.field}>
-                    <span className={styles.label}>Giocatore 2</span>
-                    <select
-                      className={styles.select}
-                      onChange={(event) => {
-                        updateForm((current) => ({
-                          ...current,
-                          teams: current.teams.map((item, index) =>
-                            index === teamIndex
-                              ? { ...item, playerTwoId: event.target.value }
-                              : item
-                          )
-                        }));
-                      }}
-                      value={team.playerTwoId}
-                    >
-                      <option value="">Seleziona giocatore</option>
-                      {getAvailablePlayers(teamIndex, 'two').map((player) => (
-                        <option key={player.id} value={player.id}>
-                          {getPlayerLabel(player)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              </section>
-            ))}
+                      <FaTrashCan aria-hidden="true" className={styles.buttonIcon} />
+                      <span>Elimina</span>
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         ) : null}
 
