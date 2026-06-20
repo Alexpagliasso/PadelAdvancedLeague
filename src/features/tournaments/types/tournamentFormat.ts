@@ -5,7 +5,7 @@ export type { CompetitionPhase, TournamentFormat };
 export const tournamentFormatLabels: Record<TournamentFormat, string> = {
   round_robin: "Girone all'italiana",
   knockout: 'Eliminazione diretta',
-  group_playoff_playout: 'Girone + playoff/playout'
+  group_playoff_playout: 'Girone + fasi finali'
 };
 
 export const tournamentFormatDescriptions: Record<TournamentFormat, string> = {

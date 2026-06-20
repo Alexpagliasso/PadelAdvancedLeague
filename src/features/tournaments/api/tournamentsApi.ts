@@ -25,7 +25,9 @@ export type CreateTournamentInput = {
   allow_byes: boolean;
   use_ranking: boolean;
   playoff_teams_count: number | null;
+  playoff_label: string | null;
   playout_teams_count: number | null;
+  playout_label: string | null;
 };
 
 export type WizardTeamInput = {
@@ -53,7 +55,9 @@ export type UpdateTournamentCompetitionSettingsInput = {
   allow_byes: boolean;
   use_ranking: boolean;
   playoff_teams_count: number | null;
+  playoff_label: string | null;
   playout_teams_count: number | null;
+  playout_label: string | null;
 };
 
 export type CreateSeasonInput = {
@@ -168,7 +172,9 @@ export async function createConfiguredTournament(
     allow_byes: input.allow_byes,
     use_ranking: input.use_ranking,
     playoff_teams_count: input.playoff_teams_count,
-    playout_teams_count: input.playout_teams_count
+    playoff_label: input.playoff_label,
+    playout_teams_count: input.playout_teams_count,
+    playout_label: input.playout_label
   };
   const tournament = await createTournament(tournamentInput);
 

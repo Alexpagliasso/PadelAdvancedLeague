@@ -61,7 +61,9 @@ export type Database = {
           allow_byes: boolean;
           use_ranking: boolean;
           playoff_teams_count: number | null;
+          playoff_label: string | null;
           playout_teams_count: number | null;
+          playout_label: string | null;
           regular_calendar_generated_at: string | null;
           knockout_generated_at: string | null;
           playoff_generated_at: string | null;

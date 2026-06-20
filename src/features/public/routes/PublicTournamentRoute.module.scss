@@ -941,6 +941,14 @@
   padding: 0.8rem;
 }
 
+.standingCardPlayoff {
+  border-left: 0.35rem solid #d4af37;
+}
+
+.standingCardPlayout {
+  border-left: 0.35rem solid #94a3b8;
+}
+
 .standingCard span,
 .standingCard b {
   font-size: 0.875rem;
@@ -959,6 +967,30 @@
 
 .teamNameWithOutcome > span:first-child {
   min-width: 0;
+}
+
+.finalPhaseBadge {
+  display: none;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0.22rem 0.5rem;
+  white-space: nowrap;
+}
+
+.finalPhaseBadgePlayoff {
+  border: 1px solid #b8860b;
+  background: #fff7d6;
+  color: #061a4d;
+}
+
+.finalPhaseBadgePlayout {
+  border: 1px solid #94a3b8;
+  background: #f1f5f9;
+  color: #061a4d;
 }
 
 .mobilePoints {
@@ -1259,6 +1291,113 @@
 .calendarFilterSearch input:focus-visible {
   outline: 3px solid var(--pad-public-orange);
   outline-offset: 2px;
+}
+
+.teamFilters {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 0.85rem;
+  background: var(--pad-public-surface);
+  padding: 0.85rem;
+  box-shadow: 0 0.45rem 1.1rem rgb(6 26 77 / 5%);
+}
+
+.teamFilterField {
+  position: relative;
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.teamFilterField label {
+  color: var(--pad-public-navy);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.teamFilterField input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 0.7rem;
+  background: #ffffff;
+  color: var(--pad-public-text);
+  font: inherit;
+  font-weight: 700;
+  padding: 0.65rem 0.75rem;
+}
+
+.teamFilterField input:focus-visible {
+  outline: 3px solid var(--pad-public-orange);
+  outline-offset: 2px;
+}
+
+.calendarAccordions {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.calendarAccordion {
+  overflow: hidden;
+  border: 1px solid var(--pad-public-border);
+  border-radius: 0.85rem;
+  background: var(--pad-public-surface);
+  box-shadow: 0 0.45rem 1.1rem rgb(6 26 77 / 5%);
+}
+
+.calendarAccordionSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-height: 3.2rem;
+  color: var(--pad-public-navy);
+  cursor: pointer;
+  font-weight: 900;
+  list-style: none;
+  padding: 0.85rem 1rem;
+}
+
+.calendarAccordionSummary::-webkit-details-marker {
+  display: none;
+}
+
+.calendarAccordionSummary::after {
+  content: '+';
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: var(--pad-public-blue-soft);
+  color: var(--pad-public-navy);
+  font-weight: 900;
+  place-items: center;
+}
+
+.calendarAccordion[open] > .calendarAccordionSummary {
+  border-bottom: 1px solid var(--pad-public-border);
+  background: var(--pad-public-blue-soft);
+}
+
+.calendarAccordion[open] > .calendarAccordionSummary::after {
+  content: '-';
+  background: var(--pad-public-orange-soft);
+}
+
+.calendarAccordionSummary small {
+  margin-left: auto;
+  color: var(--pad-public-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.calendarAccordionBody {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.85rem;
 }
 
 .matchCard {
@@ -1697,6 +1836,14 @@
   color: var(--pad-public-muted);
 }
 
+.standingRowPlayoff td:first-child {
+  border-left: 0.35rem solid #d4af37;
+}
+
+.standingRowPlayout td:first-child {
+  border-left: 0.35rem solid #94a3b8;
+}
+
 .emptyState {
   display: grid;
   gap: 1rem;
@@ -1814,6 +1961,10 @@
     display: block;
   }
 
+  .tableWrap .finalPhaseBadge {
+    display: inline-flex;
+  }
+
   .phaseSegmentedControl {
     width: max-content;
     max-width: 100%;
@@ -1827,6 +1978,11 @@
     width: max-content;
     min-width: 11rem;
     border-radius: 999px;
+  }
+
+  .teamFilters {
+    grid-template-columns: minmax(20rem, 1fr) auto;
+    align-items: end;
   }
 
   .publicFilterPanelBody {
@@ -2677,4 +2833,20 @@
 
 .matchCard .setChip {
   color: #0f172a;
+}
+
+.standingCardPlayoff {
+  border-left: 6px solid #d4af37;
+}
+
+.standingCardPlayout {
+  border-left: 6px solid #94a3b8;
+}
+
+.standingRowPlayoff td:first-child {
+  border-left: 6px solid #d4af37;
+}
+
+.standingRowPlayout td:first-child {
+  border-left: 6px solid #94a3b8;
 }

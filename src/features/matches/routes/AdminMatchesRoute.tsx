@@ -17,8 +17,7 @@ import {
   buildMatchDateTime,
   formatMatchDateTime,
   getMatchDateInputValue,
-  getMatchTimeOrDefault,
-  getNearestHalfHourTime,
+  getMatchTimeInputValue,
   halfHourTimeSlots
 } from '@/features/matches/lib/matchDateTime';
 import { useTeamsBySeasonQuery } from '@/features/teams/api/teamsQueries';
@@ -46,7 +45,7 @@ const emptyMatchForm: MatchFormState = {
   homeTeamId: '',
   awayTeamId: '',
   date: '',
-  time: getNearestHalfHourTime(),
+  time: '',
   venueOption: 'GPadel Borgaro',
   customVenue: '',
   status: 'scheduled',
@@ -214,7 +213,7 @@ function getSetsFromForm(form: MatchFormState): MatchSetInput[] {
 
 function matchToForm(match: MatchWithSets | null): MatchFormState {
   if (!match) {
-    return { ...emptyMatchForm, time: getNearestHalfHourTime() };
+    return emptyMatchForm;
   }
 
   const sortedSets = [...match.sets].sort((first, second) => first.set_number - second.set_number);
@@ -230,7 +229,7 @@ function matchToForm(match: MatchWithSets | null): MatchFormState {
     homeTeamId: match.home_team_id,
     awayTeamId: match.away_team_id,
     date: getMatchDateInputValue(match.scheduled_at),
-    time: getMatchTimeOrDefault(match.scheduled_at),
+    time: getMatchTimeInputValue(match.scheduled_at),
     venueOption: isKnownVenue || !venue ? venue || 'GPadel Borgaro' : 'Altro',
     customVenue: isKnownVenue ? '' : venue,
     status: match.status,

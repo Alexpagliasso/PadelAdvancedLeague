@@ -367,6 +367,7 @@ export async function resetMatchResult(id: string): Promise<Match> {
   const { data, error } = await supabase
     .from('matches')
     .update({
+      scheduled_at: null,
       status: 'scheduled',
       result_status: 'pending',
       home_sets_won: 0,
@@ -385,6 +386,50 @@ export async function resetMatchResult(id: string): Promise<Match> {
   }
 
   return data;
+}
+
+export async function deleteMatchSafely(matchId: string): Promise<void> {
+  const match = await getMatchById(matchId);
+
+  if (!match) {
+    throw new Error('Partita non trovata.');
+  }
+
+  const { data: sets, error: setsError } = await supabase
+    .from('match_sets')
+    .select('id')
+    .eq('match_id', matchId);
+
+  if (setsError) {
+    throw setsError;
+  }
+
+  const { data: bracketMatches, error: bracketError } = await supabase
+    .from('tournament_bracket_matches')
+    .select('id')
+    .eq('match_id', matchId);
+
+  if (bracketError) {
+    throw bracketError;
+  }
+
+  const hasResult =
+    match.home_sets_won + match.away_sets_won > 0 ||
+    match.status === 'played' ||
+    match.result_status === 'official' ||
+    sets.length > 0;
+  const isBracketMatch =
+    bracketMatches.length > 0 || match.phase === 'playoff' || match.phase === 'playout';
+
+  if (hasResult || isBracketMatch) {
+    throw new Error('Non puoi eliminare una partita già giocata, con risultato o collegata a un tabellone.');
+  }
+
+  const { error } = await supabase.from('matches').delete().eq('id', matchId);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function generateRoundRobinCalendar(
@@ -1013,7 +1058,7 @@ export async function generatePlayoffPlayoutBrackets(
   }
 
   if (tournament.format !== 'group_playoff_playout') {
-    throw new Error('Questo torneo non usa la formula Girone + playoff/playout.');
+    throw new Error('Questo torneo non usa la formula Girone + fasi finali.');
   }
 
   if (!tournament.playoff_teams_count && !tournament.playout_teams_count) {
@@ -1050,6 +1095,7 @@ export async function generatePlayoffPlayoutBrackets(
 
   if (tournament.playoff_teams_count && !generatedTypes.has('playoff')) {
     const playoffTeams = input.standings.slice(0, tournament.playoff_teams_count);
+    const playoffLabel = tournament.playoff_label?.trim();
 
     if (playoffTeams.length !== tournament.playoff_teams_count) {
       throw new Error('Non ci sono abbastanza squadre in classifica per generare i playoff.');
@@ -1059,7 +1105,7 @@ export async function generatePlayoffPlayoutBrackets(
       input.tournamentId,
       input.seasonId,
       'playoff',
-      'Playoff',
+      playoffLabel && playoffLabel.length > 0 ? playoffLabel : 'Playoff',
       playoffTeams,
       tournament.allow_byes
     );
@@ -1068,6 +1114,7 @@ export async function generatePlayoffPlayoutBrackets(
 
   if (tournament.playout_teams_count && !generatedTypes.has('playout')) {
     const playoutTeams = input.standings.slice(-tournament.playout_teams_count);
+    const playoutLabel = tournament.playout_label?.trim();
 
     if (playoutTeams.length !== tournament.playout_teams_count) {
       throw new Error('Non ci sono abbastanza squadre in classifica per generare i playout.');
@@ -1077,7 +1124,7 @@ export async function generatePlayoffPlayoutBrackets(
       input.tournamentId,
       input.seasonId,
       'playout',
-      'Playout',
+      playoutLabel && playoutLabel.length > 0 ? playoutLabel : 'Playout',
       playoutTeams,
       tournament.allow_byes
     );

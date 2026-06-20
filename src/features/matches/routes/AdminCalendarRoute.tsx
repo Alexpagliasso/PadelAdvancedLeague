@@ -6,6 +6,7 @@ import { MdCancel, MdCheckCircle, MdEventBusy, MdSchedule } from 'react-icons/md
 import { ButtonLoader, SectionLoader } from '@/components/loaders/PadLoaders';
 import type { MatchSetInput, MatchWithSets } from '@/features/matches/api/matchesApi';
 import {
+  useDeleteMatchSafelyMutation,
   useMatchesBySeasonQuery,
   useResetMatchResultMutation,
   useShuffleCalendarOrderMutation,
@@ -16,8 +17,7 @@ import {
   formatMatchDate,
   formatMatchDateTime,
   getMatchDateInputValue,
-  getMatchTimeOrDefault,
-  getNearestHalfHourTime,
+  getMatchTimeInputValue,
   halfHourTimeSlots
 } from '@/features/matches/lib/matchDateTime';
 import { usePlayersQuery } from '@/features/players/api/playersQueries';
@@ -51,7 +51,7 @@ type PhaseFilter = 'all' | MatchPhase;
 
 const emptyMatchForm: MatchModalFormState = {
   date: '',
-  time: getNearestHalfHourTime(),
+  time: '',
   venue: 'GPadel Borgaro',
   status: 'scheduled',
   set1Home: '',
@@ -207,7 +207,7 @@ function matchToForm(match: MatchWithSets): MatchModalFormState {
 
   return {
     date: getMatchDateInputValue(match.scheduled_at),
-    time: getMatchTimeOrDefault(match.scheduled_at),
+    time: getMatchTimeInputValue(match.scheduled_at),
     venue: match.venue ?? defaultVenue,
     status: match.status,
     set1Home: setOne?.home_games.toString() ?? '',
@@ -380,7 +380,9 @@ export function AdminCalendarRoute() {
   const [matchdayFilter, setMatchdayFilter] = useState<string>('all');
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
   const [teamSearch, setTeamSearch] = useState('');
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [isTeamPickerOpen, setIsTeamPickerOpen] = useState(false);
+  const [teamFilterError, setTeamFilterError] = useState<string | null>(null);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [matchForm, setMatchForm] = useState<MatchModalFormState>(emptyMatchForm);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -394,6 +396,7 @@ export function AdminCalendarRoute() {
   const shuffleCalendarMutation = useShuffleCalendarOrderMutation(selectedSeasonId);
   const updateMatchMutation = useUpdateMatchMutation(selectedSeasonId);
   const resetMatchMutation = useResetMatchResultMutation(selectedSeasonId);
+  const deleteMatchMutation = useDeleteMatchSafelyMutation(selectedSeasonId);
 
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
   const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
@@ -431,14 +434,11 @@ export function AdminCalendarRoute() {
   const filteredTeamOptions = useMemo(() => {
     const query = teamSearch.trim().toLowerCase();
 
-    if (query.length < 2) {
-      return [];
-    }
-
     return teams
-      .filter((team) => getTeamSearchText(team, getPlayerName).includes(query))
+      .filter((team) => !selectedTeamIds.includes(team.id))
+      .filter((team) => (query.length === 0 ? true : getTeamSearchText(team, getPlayerName).includes(query)))
       .slice(0, 8);
-  }, [getPlayerName, teamSearch, teams]);
+  }, [getPlayerName, selectedTeamIds, teamSearch, teams]);
 
   const filteredMatches = useMemo(
     () =>
@@ -447,21 +447,24 @@ export function AdminCalendarRoute() {
           matchdayFilter === 'all' || match.matchday === Number(matchdayFilter);
         const matchesPhase = phaseFilter === 'all' || match.phase === phaseFilter;
         const matchesTeam =
-          !selectedTeamId ||
-          match.home_team_id === selectedTeamId ||
-          match.away_team_id === selectedTeamId;
+          selectedTeamIds.length === 0
+            ? true
+            : selectedTeamIds.length === 1
+              ? match.home_team_id === selectedTeamIds[0] || match.away_team_id === selectedTeamIds[0]
+              : (match.home_team_id === selectedTeamIds[0] && match.away_team_id === selectedTeamIds[1]) ||
+                (match.home_team_id === selectedTeamIds[1] && match.away_team_id === selectedTeamIds[0]);
 
         return matchesMatchday && matchesPhase && matchesTeam;
       }),
-    [matchdayFilter, matches, phaseFilter, selectedTeamId]
+    [matchdayFilter, matches, phaseFilter, selectedTeamIds]
   );
   const rounds = useMemo(
     () => getRounds(filteredMatches, teams.length),
     [filteredMatches, teams.length]
   );
-  const selectedTeam = selectedTeamId
-    ? teams.find((team) => team.id === selectedTeamId) ?? null
-    : null;
+  const selectedTeams = selectedTeamIds
+    .map((teamId) => teams.find((team) => team.id === teamId) ?? null)
+    .filter((team): team is TeamWithMembers => team !== null);
 
   useEffect(() => {
     if (selectedTournamentId && tournamentOptions.some((option) => option.id === selectedTournamentId)) {
@@ -479,8 +482,10 @@ export function AdminCalendarRoute() {
   useEffect(() => {
     setMatchdayFilter('all');
     setPhaseFilter('all');
-    setSelectedTeamId(null);
+    setSelectedTeamIds([]);
     setTeamSearch('');
+    setIsTeamPickerOpen(false);
+    setTeamFilterError(null);
     setMessage(null);
   }, [selectedSeasonId]);
 
@@ -591,11 +596,45 @@ export function AdminCalendarRoute() {
   const resetFilters = () => {
     setMatchdayFilter('all');
     setPhaseFilter('all');
-    setSelectedTeamId(null);
+    setSelectedTeamIds([]);
     setTeamSearch('');
+    setIsTeamPickerOpen(false);
+    setTeamFilterError(null);
   };
 
-  const isSavingMatch = updateMatchMutation.isPending || resetMatchMutation.isPending;
+  const handleDeleteMatch = async () => {
+    if (!selectedMatch) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Vuoi eliminare questa partita dal calendario? L’operazione non può essere annullata.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setModalError(null);
+
+    try {
+      await deleteMatchMutation.mutateAsync(selectedMatch.id);
+      setSelectedMatchId(null);
+      setMessage('Partita eliminata correttamente.');
+    } catch (error) {
+      setModalError(getErrorMessage(error));
+    }
+  };
+
+  const isSavingMatch =
+    updateMatchMutation.isPending || resetMatchMutation.isPending || deleteMatchMutation.isPending;
+  const isSelectedMatchDeletable = selectedMatch
+    ? selectedMatch.status !== 'played' &&
+      selectedMatch.result_status !== 'official' &&
+      selectedMatch.sets.length === 0 &&
+      selectedMatch.home_sets_won + selectedMatch.away_sets_won === 0 &&
+      selectedMatch.phase === 'regular_season'
+    : false;
   const showThirdSet = shouldShowThirdSet(matchForm);
 
   return (
@@ -644,23 +683,80 @@ export function AdminCalendarRoute() {
         </label>
 
         <div className={styles.filters}>
-          <label className={styles.field}>
-            <span className={styles.label}>Giornata</span>
-            <select
-              className={styles.select}
-              onChange={(event) => {
-                setMatchdayFilter(event.target.value);
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="admin-calendar-team-search">
+              Squadre
+            </label>
+            <input
+              className={styles.input}
+              id="admin-calendar-team-search"
+              onBlur={() => {
+                window.setTimeout(() => {
+                  setIsTeamPickerOpen(false);
+                }, 120);
               }}
-              value={matchdayFilter}
-            >
-              <option value="all">Tutte</option>
-              {availableMatchdays.map((matchday) => (
-                <option key={matchday} value={matchday}>
-                  Giornata {matchday}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(event) => {
+                setTeamSearch(event.target.value);
+              }}
+              onFocus={() => {
+                setIsTeamPickerOpen(true);
+              }}
+              placeholder="Cerca squadra o giocatore..."
+              value={teamSearch}
+            />
+            {isTeamPickerOpen ? (
+              <div className={styles.searchResults}>
+                {filteredTeamOptions.length > 0 ? (
+                  filteredTeamOptions.map((team) => (
+                    <button
+                      key={team.id}
+                      onClick={() => {
+                        if (selectedTeamIds.includes(team.id)) {
+                          return;
+                        }
+
+                        if (selectedTeamIds.length >= 2) {
+                          setTeamFilterError('Puoi filtrare al massimo due squadre.');
+                          return;
+                        }
+
+                        setSelectedTeamIds((current) => [...current, team.id]);
+                        setTeamSearch('');
+                        setIsTeamPickerOpen(false);
+                        setTeamFilterError(null);
+                      }}
+                      type="button"
+                    >
+                      {getTeamLabel(team, getPlayerName)}
+                    </button>
+                  ))
+                ) : (
+                  <p className={styles.searchEmpty}>Nessuna squadra trovata.</p>
+                )}
+              </div>
+            ) : null}
+            {selectedTeams.length > 0 ? (
+              <div className={styles.selectedChips}>
+                {selectedTeams.map((team) => (
+                  <span className={styles.selectedChip} key={team.id}>
+                    {getTeamLabel(team, getPlayerName)}
+                    <button
+                      aria-label={`Rimuovi filtro ${getTeamLabel(team, getPlayerName)}`}
+                      onClick={() => {
+                        setSelectedTeamIds((current) =>
+                          current.filter((selectedTeamId) => selectedTeamId !== team.id)
+                        );
+                        setTeamFilterError(null);
+                      }}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <label className={styles.field}>
             <span className={styles.label}>Fase</span>
@@ -682,56 +778,28 @@ export function AdminCalendarRoute() {
             </select>
           </label>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="admin-calendar-team-search">
-              Squadra
-            </label>
-            <input
-              className={styles.input}
-              id="admin-calendar-team-search"
+          <label className={styles.field}>
+            <span className={styles.label}>Giornata</span>
+            <select
+              className={styles.select}
               onChange={(event) => {
-                setTeamSearch(event.target.value);
+                setMatchdayFilter(event.target.value);
               }}
-              placeholder="Cerca squadra o giocatore..."
-              value={teamSearch}
-            />
-            {filteredTeamOptions.length > 0 ? (
-              <div className={styles.searchResults}>
-                {filteredTeamOptions.map((team) => (
-                  <button
-                    key={team.id}
-                    onClick={() => {
-                      setSelectedTeamId(team.id);
-                      setTeamSearch('');
-                    }}
-                    type="button"
-                  >
-                    {getTeamLabel(team, getPlayerName)}
-                  </button>
-                ))}
-              </div>
-            ) : teamSearch.trim().length >= 2 ? (
-              <p className={styles.searchEmpty}>Nessuna squadra trovata.</p>
-            ) : null}
-            {selectedTeam ? (
-              <span className={styles.selectedChip}>
-                {getTeamLabel(selectedTeam, getPlayerName)}
-                <button
-                  aria-label="Rimuovi filtro squadra"
-                  onClick={() => {
-                    setSelectedTeamId(null);
-                  }}
-                  type="button"
-                >
-                  ×
-                </button>
-              </span>
-            ) : null}
-          </div>
+              value={matchdayFilter}
+            >
+              <option value="all">Tutte</option>
+              {availableMatchdays.map((matchday) => (
+                <option key={matchday} value={matchday}>
+                  Giornata {matchday}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <button className={styles.clearButton} onClick={resetFilters} type="button">
             Pulisci filtri
           </button>
+          {teamFilterError ? <p className={styles.filterError}>{teamFilterError}</p> : null}
         </div>
 
         {calendarGeneratedAt ? (
@@ -889,6 +957,11 @@ export function AdminCalendarRoute() {
             </header>
 
             {modalError ? <p className={styles.error}>{modalError}</p> : null}
+            {!isSelectedMatchDeletable ? (
+              <p className={styles.muted}>
+                Non puoi eliminare una partita già giocata, con risultato o collegata a un tabellone.
+              </p>
+            ) : null}
 
             <div className={styles.modalGrid}>
               <label className={styles.field}>
@@ -911,6 +984,7 @@ export function AdminCalendarRoute() {
                   }}
                   value={matchForm.time}
                 >
+                  <option value="">Seleziona ora</option>
                   {halfHourTimeSlots.map((slot) => (
                     <option key={slot} value={slot}>
                       {slot}
@@ -1067,6 +1141,17 @@ export function AdminCalendarRoute() {
             <footer className={styles.modalActions}>
               <button
                 className={styles.buttonDanger}
+                disabled={isSavingMatch || !isSelectedMatchDeletable}
+                onClick={() => void handleDeleteMatch()}
+                type="button"
+              >
+                Elimina partita
+              </button>
+            </footer>
+
+            <footer className={styles.modalActions}>
+              <button
+                className={styles.buttonDanger}
                 disabled={isSavingMatch || selectedMatch.sets.length === 0}
                 onClick={() => void handleResetResult()}
                 type="button"
@@ -1091,6 +1176,7 @@ export function AdminCalendarRoute() {
           </section>
         </div>
       ) : null}
+
     </section>
   );
 }

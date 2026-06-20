@@ -326,6 +326,13 @@
   font-size: 0.85rem;
 }
 
+.filterError {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 .selectedChip {
   display: inline-flex;
   align-items: center;
@@ -340,6 +347,13 @@
   font-size: 0.85rem;
   font-weight: 800;
   padding: 0.35rem 0.45rem 0.35rem 0.7rem;
+}
+
+.selectedChips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .selectedChip button {
@@ -478,8 +492,16 @@
   }
 
   .filters {
-    grid-template-columns: minmax(12rem, 18rem) minmax(10rem, 14rem) minmax(18rem, 1fr) auto;
+    grid-template-columns:
+      minmax(18rem, 1.4fr)
+      minmax(9rem, 0.7fr)
+      minmax(9rem, 0.7fr)
+      auto;
     align-items: end;
+  }
+
+  .filterError {
+    grid-column: 1 / -1;
   }
 
   .field {

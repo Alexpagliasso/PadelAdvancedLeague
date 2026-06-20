@@ -49,7 +49,7 @@ function getTimeZoneOffsetMs(value: Date): number {
 }
 
 export function buildMatchDateTime(date: string, time: string): string | null {
-  if (!date) {
+  if (!date || !time) {
     return null;
   }
 

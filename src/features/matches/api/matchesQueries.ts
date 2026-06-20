@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createMatch,
+  deleteMatchSafely,
   generateKnockoutBracket,
   generatePlayoffPlayoutBrackets,
   generateRoundRobinCalendar,
@@ -94,6 +95,30 @@ export function useResetMatchResultMutation(seasonId: string | null) {
           : Promise.resolve(),
         queryClient.invalidateQueries({ queryKey: matchQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: publicTournamentQueryKeys.all })
+      ]);
+    }
+  });
+}
+
+export function useDeleteMatchSafelyMutation(seasonId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (matchId: string) => {
+      if (!seasonId) {
+        throw new Error('Seleziona un torneo prima di eliminare la partita.');
+      }
+
+      return deleteMatchSafely(matchId);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        seasonId
+          ? queryClient.invalidateQueries({ queryKey: matchQueryKeys.bySeason(seasonId) })
+          : Promise.resolve(),
+        queryClient.invalidateQueries({ queryKey: matchQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: publicTournamentQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: tournamentQueryKeys.adminList() })
       ]);
     }
   });

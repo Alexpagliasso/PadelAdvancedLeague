@@ -52,6 +52,7 @@ type PhaseFilter = 'all' | MatchPhase;
 type MatchOutcome = 'win' | 'loss';
 type RecentResult = MatchOutcome | null;
 type MatchPhaseLabels = Map<string, string>;
+type FinalPhaseDestination = 'playoff' | 'playout';
 
 const publicTabs: { icon: IconType; id: PublicTab; label: string }[] = [
   { icon: FaRankingStar, id: 'standings', label: 'Classifica' },
@@ -122,6 +123,38 @@ function getDetailedPhaseLabel(
   }
 
   return bracketMatch?.round_label ? `${bracketMatch.round_label} playout` : 'Playout';
+}
+
+function getTournamentPlayoffLabel(tournament: PublicTournament): string {
+  const label = tournament.playoff_label?.trim();
+  return label && label.length > 0 ? label : 'Playoff';
+}
+
+function getTournamentPlayoutLabel(tournament: PublicTournament): string {
+  const label = tournament.playout_label?.trim();
+  return label && label.length > 0 ? label : 'Playout';
+}
+
+function getStandingDestination(
+  position: number,
+  tournament: PublicTournament
+): { type: FinalPhaseDestination; label: string } | null {
+  if (tournament.format !== 'group_playoff_playout') {
+    return null;
+  }
+
+  const playoffCount = tournament.playoff_teams_count ?? 0;
+  const playoutCount = tournament.playout_teams_count ?? 0;
+
+  if (playoffCount > 0 && position <= playoffCount) {
+    return { type: 'playoff', label: getTournamentPlayoffLabel(tournament) };
+  }
+
+  if (playoutCount > 0 && position > tournament.expected_teams_count - playoutCount) {
+    return { type: 'playout', label: getTournamentPlayoutLabel(tournament) };
+  }
+
+  return null;
 }
 
 function useBracketVisibleRoundCount(): number {
@@ -706,6 +739,7 @@ export function PublicTournamentView({
   const [calendarFilterOpen, setCalendarFilterOpen] = useState(false);
   const [calendarTeamSearch, setCalendarTeamSearch] = useState('');
   const [selectedCalendarTeamIds, setSelectedCalendarTeamIds] = useState<string[]>([]);
+  const [teamNameSearch, setTeamNameSearch] = useState('');
   const [resultsPhase, setResultsPhase] = useState<PhaseFilter>('all');
   const [resultsFilterOpen, setResultsFilterOpen] = useState(false);
   const [resultsTeamSearch, setResultsTeamSearch] = useState('');
@@ -735,11 +769,11 @@ export function PublicTournamentView({
 
       return [
         { id: 'regular_season' as const, label: 'Girone' },
-        playoffBracket ? { id: 'playoff' as const, label: 'Playoff' } : null,
-        playoutBracket ? { id: 'playout' as const, label: 'Playout' } : null
+        playoffBracket ? { id: 'playoff' as const, label: getTournamentPlayoffLabel(data.tournament) } : null,
+        playoutBracket ? { id: 'playout' as const, label: getTournamentPlayoutLabel(data.tournament) } : null
       ].filter((tab): tab is { id: StandingsSubTab; label: string } => tab !== null);
     },
-    [data.tournament.format, playoffBracket, playoutBracket]
+    [data.tournament, playoffBracket, playoutBracket]
   );
   const regularSeasonMatches = useMemo(
     () => data.matches.filter((match) => match.phase === 'regular_season'),
@@ -784,9 +818,44 @@ export function PublicTournamentView({
     () => (isKnockoutTournament ? [] : calculateStandings(data.teams, regularSeasonMatches)),
     [data.teams, isKnockoutTournament, regularSeasonMatches]
   );
+  const filteredTeams = useMemo(() => {
+    const teamQuery = teamNameSearch.trim().toLowerCase();
+
+    return data.teams.filter((team) => {
+      const matchesTeamSearch =
+        teamQuery.length === 0 ||
+        [
+          team.name,
+          getTeamDisplayLabel(team),
+          ...team.players.flatMap((player) => [
+            getPlayerLabel(player),
+            player.first_name,
+            player.last_name,
+            player.display_name
+          ])
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(teamQuery);
+
+      return matchesTeamSearch;
+    });
+  }, [data.teams, teamNameSearch]);
   const calendarMatches = useMemo(
     () => sortCalendarMatches(data.matches),
     [data.matches]
+  );
+  const upcomingMatches = useMemo(
+    () =>
+      calendarMatches
+        .filter(
+          (match) =>
+            match.status === 'scheduled' &&
+            match.scheduled_at !== null &&
+            !isMatchPlayed(match)
+        )
+        .slice(0, 5),
+    [calendarMatches]
   );
   const filteredCalendarMatches = useMemo(() => {
     const phaseMatches = filterMatchesByPhase(calendarMatches, calendarPhase);
@@ -918,8 +987,18 @@ export function PublicTournamentView({
             {!isKnockoutTournament && standingsSubTab === 'regular_season' ? (
               <>
                 <div className={styles.standingsList}>
-                  {standings.map((row) => (
-                    <article className={styles.standingCard} key={row.teamId}>
+                  {standings.map((row) => {
+                    const destination = getStandingDestination(row.position, data.tournament);
+
+                    return (
+                    <article
+                      className={cx(
+                        styles.standingCard,
+                        destination?.type === 'playoff' && styles.standingCardPlayoff,
+                        destination?.type === 'playout' && styles.standingCardPlayout
+                      )}
+                      key={row.teamId}
+                    >
                       <span
                         className={cx(
                           styles.position,
@@ -941,6 +1020,18 @@ export function PublicTournamentView({
                         <span>{row.teamName}</span>
                         <RecentResultsStrip results={recentResultsByTeamId.get(row.teamId) ?? []} />
                       </strong>
+                      {destination ? (
+                        <span
+                          className={cx(
+                            styles.finalPhaseBadge,
+                            destination.type === 'playoff'
+                              ? styles.finalPhaseBadgePlayoff
+                              : styles.finalPhaseBadgePlayout
+                          )}
+                        >
+                          {destination.label}
+                        </span>
+                      ) : null}
                       <b className={styles.mobilePoints}>{row.points} Pt</b>
                       <div className={styles.mobileStandingStats}>
                         <span>PG {row.played}</span>
@@ -952,7 +1043,8 @@ export function PublicTournamentView({
                         <span>DG {row.gameDiff}</span>
                       </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className={styles.tableWrap}>
                   <table className={styles.table}>
@@ -972,8 +1064,17 @@ export function PublicTournamentView({
                       </tr>
                     </thead>
                     <tbody>
-                      {standings.map((row) => (
-                        <tr key={row.teamId}>
+                      {standings.map((row) => {
+                        const destination = getStandingDestination(row.position, data.tournament);
+
+                        return (
+                        <tr
+                          className={cx(
+                            destination?.type === 'playoff' && styles.standingRowPlayoff,
+                            destination?.type === 'playout' && styles.standingRowPlayout
+                          )}
+                          key={row.teamId}
+                        >
                           <td>
                             <span
                               className={cx(
@@ -998,6 +1099,18 @@ export function PublicTournamentView({
                           <td>
                             <span className={styles.teamNameWithOutcome}>
                               <span>{row.teamName}</span>
+                              {destination ? (
+                                <span
+                                  className={cx(
+                                    styles.finalPhaseBadge,
+                                    destination.type === 'playoff'
+                                      ? styles.finalPhaseBadgePlayoff
+                                      : styles.finalPhaseBadgePlayout
+                                  )}
+                                >
+                                  {destination.label}
+                                </span>
+                              ) : null}
                             </span>
                           </td>
                           <td>{row.played}</td>
@@ -1014,7 +1127,8 @@ export function PublicTournamentView({
                             <strong>{row.points}</strong>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1035,10 +1149,36 @@ export function PublicTournamentView({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Squadre</h2>
-              <span>{data.teams.length.toString()} squadre</span>
+              <span>{filteredTeams.length.toString()} squadre</span>
+            </div>
+            <div className={styles.teamFilters}>
+              <div className={styles.teamFilterField}>
+                <label htmlFor="public-team-search">Cerca squadra</label>
+                <input
+                  id="public-team-search"
+                  onChange={(event) => {
+                    setTeamNameSearch(event.target.value);
+                  }}
+                  placeholder="Cerca squadra o giocatore..."
+                  type="search"
+                  value={teamNameSearch}
+                />
+              </div>
+
+              {teamNameSearch ? (
+                <button
+                  className={styles.clearFilterButton}
+                  onClick={() => {
+                    setTeamNameSearch('');
+                  }}
+                  type="button"
+                >
+                  Pulisci filtri
+                </button>
+              ) : null}
             </div>
             <div className={styles.accordion}>
-              {data.teams.map((team) => (
+              {filteredTeams.map((team) => (
                 <TeamAccordionItem
                   isOpen={openTeamId === team.id}
                   key={team.id}
@@ -1053,6 +1193,9 @@ export function PublicTournamentView({
                   teams={data.teams}
                 />
               ))}
+              {filteredTeams.length === 0 ? (
+                <p className={styles.muted}>Nessuna squadra trovata.</p>
+              ) : null}
             </div>
           </section>
         ) : null}
@@ -1063,37 +1206,62 @@ export function PublicTournamentView({
               <h2>Calendario</h2>
               <span>{filteredCalendarMatches.length.toString()} partite trovate</span>
             </div>
-            <PublicFilterPanel
-              availablePhases={availableCalendarPhases}
-              isOpen={calendarFilterOpen}
-              onClear={() => {
-                setSelectedCalendarTeamIds([]);
-                setCalendarTeamSearch('');
-                setCalendarPhase('all');
-              }}
-              onPhaseChange={setCalendarPhase}
-              onSearchChange={setCalendarTeamSearch}
-              onToggleOpen={() => {
-                setCalendarFilterOpen((current) => !current);
-              }}
-              onToggleTeam={(teamId) => {
-                setSelectedCalendarTeamIds((current) =>
-                  current.includes(teamId)
-                    ? current.filter((selectedTeamId) => selectedTeamId !== teamId)
-                    : [...current, teamId]
-                );
-              }}
-              phase={calendarPhase}
-              search={calendarTeamSearch}
-              selectedTeamIds={selectedCalendarTeamIds}
-              teams={data.teams}
-            />
-            <MatchList
-              emptyLabel="Calendario non disponibile."
-              matches={filteredCalendarMatches}
-              phaseLabels={matchPhaseLabels}
-              teams={data.teams}
-            />
+            <div className={styles.calendarAccordions}>
+              <details className={styles.calendarAccordion} open>
+                <summary className={styles.calendarAccordionSummary}>
+                  <span>Prossime partite</span>
+                  <small>{upcomingMatches.length.toString()} programmate</small>
+                </summary>
+                <div className={styles.calendarAccordionBody}>
+                  <MatchList
+                    emptyLabel="Nessuna prossima partita programmata."
+                    matches={upcomingMatches}
+                    phaseLabels={matchPhaseLabels}
+                    teams={data.teams}
+                  />
+                </div>
+              </details>
+
+              <details className={styles.calendarAccordion}>
+                <summary className={styles.calendarAccordionSummary}>
+                  <span>Calendario completo</span>
+                  <small>{filteredCalendarMatches.length.toString()} partite trovate</small>
+                </summary>
+                <div className={styles.calendarAccordionBody}>
+                  <PublicFilterPanel
+                    availablePhases={availableCalendarPhases}
+                    isOpen={calendarFilterOpen}
+                    onClear={() => {
+                      setSelectedCalendarTeamIds([]);
+                      setCalendarTeamSearch('');
+                      setCalendarPhase('all');
+                    }}
+                    onPhaseChange={setCalendarPhase}
+                    onSearchChange={setCalendarTeamSearch}
+                    onToggleOpen={() => {
+                      setCalendarFilterOpen((current) => !current);
+                    }}
+                    onToggleTeam={(teamId) => {
+                      setSelectedCalendarTeamIds((current) =>
+                        current.includes(teamId)
+                          ? current.filter((selectedTeamId) => selectedTeamId !== teamId)
+                          : [...current, teamId]
+                      );
+                    }}
+                    phase={calendarPhase}
+                    search={calendarTeamSearch}
+                    selectedTeamIds={selectedCalendarTeamIds}
+                    teams={data.teams}
+                  />
+                  <MatchList
+                    emptyLabel="Calendario non disponibile."
+                    matches={filteredCalendarMatches}
+                    phaseLabels={matchPhaseLabels}
+                    teams={data.teams}
+                  />
+                </div>
+              </details>
+            </div>
           </section>
         ) : null}
 

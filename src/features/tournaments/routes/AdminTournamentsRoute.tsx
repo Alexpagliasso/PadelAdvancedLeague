@@ -72,7 +72,9 @@ type TournamentFormState = {
   allowByes: boolean;
   useRanking: boolean;
   playoffTeamsCount: string;
+  playoffLabel: string;
   playoutTeamsCount: string;
+  playoutLabel: string;
 };
 
 type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
@@ -102,7 +104,9 @@ const emptyTournamentForm: TournamentFormState = {
   allowByes: true,
   useRanking: false,
   playoffTeamsCount: '',
-  playoutTeamsCount: ''
+  playoffLabel: 'Playoff',
+  playoutTeamsCount: '',
+  playoutLabel: 'Playout'
 };
 
 function createEmptyWizardState(): TournamentWizardState {
@@ -158,6 +162,11 @@ function getBracketTypeLabel(type: BracketType): string {
   };
 
   return labels[type];
+}
+
+function getFinalPhaseLabel(label: string | null, fallback: string): string {
+  const trimmedLabel = label?.trim();
+  return trimmedLabel && trimmedLabel.length > 0 ? trimmedLabel : fallback;
 }
 
 function isPowerOfTwo(value: number): boolean {
@@ -286,7 +295,9 @@ function tournamentToForm(tournament: TournamentWithSeasons | null): TournamentF
     allowByes: tournament.allow_byes,
     useRanking: tournament.use_ranking,
     playoffTeamsCount: tournament.playoff_teams_count?.toString() ?? '',
-    playoutTeamsCount: tournament.playout_teams_count?.toString() ?? ''
+    playoffLabel: tournament.playoff_label ?? 'Playoff',
+    playoutTeamsCount: tournament.playout_teams_count?.toString() ?? '',
+    playoutLabel: tournament.playout_label ?? 'Playout'
   };
 }
 
@@ -318,7 +329,9 @@ type NormalizedCompetitionSettings = {
   allow_byes: boolean;
   use_ranking: boolean;
   playoff_teams_count: number | null;
+  playoff_label: string | null;
   playout_teams_count: number | null;
+  playout_label: string | null;
 };
 
 function normalizeCompetitionSettings(
@@ -340,7 +353,9 @@ function normalizeCompetitionSettings(
       allow_byes: false,
       use_ranking: form.useRanking,
       playoff_teams_count: null,
-      playout_teams_count: null
+      playoff_label: null,
+      playout_teams_count: null,
+      playout_label: null
     };
   }
 
@@ -357,7 +372,9 @@ function normalizeCompetitionSettings(
       allow_byes: form.allowByes,
       use_ranking: form.useRanking,
       playoff_teams_count: null,
-      playout_teams_count: null
+      playoff_label: null,
+      playout_teams_count: null,
+      playout_label: null
     };
   }
 
@@ -400,7 +417,9 @@ function normalizeCompetitionSettings(
     allow_byes: form.allowByes,
     use_ranking: form.useRanking,
     playoff_teams_count: playoffTeamsCount,
-    playout_teams_count: playoutTeamsCount
+    playoff_label: form.playoffLabel.trim() || 'Playoff',
+    playout_teams_count: playoutTeamsCount,
+    playout_label: form.playoutLabel.trim() || 'Playout'
   };
 }
 
@@ -534,7 +553,7 @@ export function AdminTournamentsRoute() {
     }
 
     if (selectedTournament.format !== 'group_playoff_playout') {
-      return 'La fase finale è disponibile solo per tornei con formula Girone + playoff/playout.';
+      return 'La fase finale è disponibile solo per tornei con formula Girone + fasi finali.';
     }
 
     if (!hasPlayoffConfigured && !hasPlayoutConfigured) {
@@ -574,6 +593,18 @@ export function AdminTournamentsRoute() {
       ? [...matches].sort((first, second) => first.created_at.localeCompare(second.created_at))[0]
           ?.created_at ?? null
       : null;
+  const hasGeneratedBracket =
+    brackets.length > 0 ||
+    Boolean(
+      selectedTournament?.knockout_generated_at ??
+        selectedTournament?.playoff_generated_at ??
+        selectedTournament?.playout_generated_at
+    );
+  const canExtendRoundRobinWithFinalPhases =
+    selectedTournament !== null &&
+    selectedTournament.format === 'round_robin' &&
+    !hasGeneratedBracket &&
+    (Boolean(selectedTournament.regular_calendar_generated_at) || calendarGeneratedAt !== null);
   const isFormulaLocked = Boolean(
     selectedTournament?.regular_calendar_generated_at ??
       selectedTournament?.knockout_generated_at ??
@@ -695,6 +726,10 @@ export function AdminTournamentsRoute() {
       const effectiveUseRanking = isFormulaLocked
         ? selectedTournament.use_ranking
         : input.use_ranking;
+      const canApplyFinalPhaseExtension =
+        canExtendRoundRobinWithFinalPhases &&
+        input.format === 'group_playoff_playout';
+      const keepStructuralSettingsLocked = isFormulaLocked && !canApplyFinalPhaseExtension;
 
       await updateTournamentMutation.mutateAsync({
         id: selectedTournament.id,
@@ -703,18 +738,24 @@ export function AdminTournamentsRoute() {
         description: input.description,
         status: input.status,
         is_public: selectedTournament.is_public,
-        expected_teams_count: isFormulaLocked
+        expected_teams_count: keepStructuralSettingsLocked
           ? selectedTournament.expected_teams_count
           : input.expected_teams_count,
-        format: isFormulaLocked ? selectedTournament.format : input.format,
-        allow_byes: isFormulaLocked ? selectedTournament.allow_byes : input.allow_byes,
+        format: keepStructuralSettingsLocked ? selectedTournament.format : input.format,
+        allow_byes: keepStructuralSettingsLocked ? selectedTournament.allow_byes : input.allow_byes,
         use_ranking: effectiveUseRanking,
-        playoff_teams_count: isFormulaLocked
+        playoff_teams_count: keepStructuralSettingsLocked
           ? selectedTournament.playoff_teams_count
           : input.playoff_teams_count,
-        playout_teams_count: isFormulaLocked
+        playoff_label: keepStructuralSettingsLocked
+          ? selectedTournament.playoff_label
+          : input.playoff_label,
+        playout_teams_count: keepStructuralSettingsLocked
           ? selectedTournament.playout_teams_count
-          : input.playout_teams_count
+          : input.playout_teams_count,
+        playout_label: keepStructuralSettingsLocked
+          ? selectedTournament.playout_label
+          : input.playout_label
       });
 
       if (selectedMainSeasonId) {
@@ -1200,6 +1241,7 @@ export function AdminTournamentsRoute() {
                 <TournamentCreationWizard
                   form={wizardForm}
                   isBusy={isBusy}
+                  canExtendRoundRobinWithFinalPhases={canExtendRoundRobinWithFinalPhases}
                   locked={isFormulaLocked}
                   mode="edit"
                   onChange={setWizardForm}
@@ -1292,7 +1334,7 @@ export function AdminTournamentsRoute() {
                     <strong>{selectedTournament.knockout_generated_at ? 'Generato' : '-'}</strong>
                   </div>
                   <div>
-                    <span>Playoff</span>
+                    <span>{getFinalPhaseLabel(selectedTournament.playoff_label, 'Playoff')}</span>
                     <strong>
                       {hasPlayoffConfigured
                         ? hasPlayoffGenerated
@@ -1302,7 +1344,7 @@ export function AdminTournamentsRoute() {
                     </strong>
                   </div>
                   <div>
-                    <span>Playout</span>
+                    <span>{getFinalPhaseLabel(selectedTournament.playout_label, 'Playout')}</span>
                     <strong>
                       {hasPlayoutConfigured
                         ? hasPlayoutGenerated
@@ -1580,6 +1622,7 @@ export function AdminTournamentsRoute() {
 }
 
 function TournamentCreationWizard({
+  canExtendRoundRobinWithFinalPhases = false,
   form,
   isBusy,
   locked = false,
@@ -1591,6 +1634,7 @@ function TournamentCreationWizard({
   step,
   submitButtonId
 }: {
+  canExtendRoundRobinWithFinalPhases?: boolean;
   form: TournamentWizardState;
   isBusy: boolean;
   locked?: boolean;
@@ -1612,6 +1656,7 @@ function TournamentCreationWizard({
   const [draftPlayerOneSearch, setDraftPlayerOneSearch] = useState('');
   const [draftPlayerTwoSearch, setDraftPlayerTwoSearch] = useState('');
   const isEditMode = mode === 'edit';
+  const canEditFinalPhaseConfiguration = isEditMode && locked && canExtendRoundRobinWithFinalPhases;
   const selectedPlayerIds = form.teams.flatMap((team) =>
     [team.playerOneId, team.playerTwoId].filter(Boolean)
   );
@@ -2006,45 +2051,59 @@ function TournamentCreationWizard({
 
         {step === 2 ? (
           <div className={styles.radioCards}>
-            {tournamentFormatOptions.map((format) => (
-              <label
-                className={cx(
-                  styles.radioCard,
-                  form.format === format && styles.radioCardActive,
-                  locked && styles.radioCardDisabled
-                )}
-                key={format}
-              >
-                <input
-                  checked={form.format === format}
-                  disabled={locked}
-                  name="wizard-format"
-                  onChange={() => {
-                    updateForm((current) => ({
-                      ...current,
-                      format,
-                      allowByes: format === 'round_robin' ? false : current.allowByes,
-                      playoffTeamsCount: format === 'group_playoff_playout' ? current.playoffTeamsCount : '',
-                      playoutTeamsCount: format === 'group_playoff_playout' ? current.playoutTeamsCount : ''
-                    }));
-                  }}
-                  type="radio"
-                />
-                <span>
-                  <strong>
+            {tournamentFormatOptions.map((format) => {
+                const isFormatSelectableWhenExtending =
+                  canEditFinalPhaseConfiguration &&
+                  (format === 'round_robin' || format === 'group_playoff_playout');
+                const isFormatDisabled = locked && !isFormatSelectableWhenExtending;
+
+                return (
+                  <label
+                    className={cx(
+                      styles.radioCard,
+                      form.format === format && styles.radioCardActive,
+                      isFormatDisabled && styles.radioCardDisabled
+                    )}
+                    key={format}
+                  >
+                    <input
+                      checked={form.format === format}
+                      disabled={isFormatDisabled}
+                      name="wizard-format"
+                      onChange={() => {
+                        updateForm((current) => ({
+                          ...current,
+                          format,
+                          allowByes: format === 'round_robin' ? false : current.allowByes,
+                          playoffTeamsCount:
+                            format === 'group_playoff_playout' ? current.playoffTeamsCount : '',
+                          playoutTeamsCount:
+                            format === 'group_playoff_playout' ? current.playoutTeamsCount : ''
+                        }));
+                      }}
+                      type="radio"
+                    />
+                    <span>
+                      <strong>
                     {format === 'group_playoff_playout'
-                      ? 'Girone + eliminazione diretta'
+                      ? 'Girone + fasi finali'
                       : tournamentFormatLabels[format]}
-                  </strong>
-                  <small>{tournamentFormatDescriptions[format]}</small>
-                </span>
-              </label>
-            ))}
+                      </strong>
+                      <small>{tournamentFormatDescriptions[format]}</small>
+                    </span>
+                  </label>
+                );
+              })}
           </div>
         ) : null}
 
         {step === 3 ? (
           <div className={styles.form}>
+            {canEditFinalPhaseConfiguration ? (
+              <p className={styles.warningMessage}>
+                Il calendario del girone esiste già. Verranno aggiunti solo playoff/playout al termine del girone.
+              </p>
+            ) : null}
             {form.format === 'round_robin' || form.format === 'group_playoff_playout' ? (
               <label className={styles.checkboxRow}>
                 <input
@@ -2066,7 +2125,7 @@ function TournamentCreationWizard({
               <label className={styles.checkboxRow}>
                 <input
                   checked={form.allowByes}
-                  disabled={isEditMode && locked}
+                  disabled={isEditMode && locked && !canEditFinalPhaseConfiguration}
                   onChange={(event) => {
                     updateForm((current) => ({ ...current, allowByes: event.target.checked }));
                   }}
@@ -2097,7 +2156,7 @@ function TournamentCreationWizard({
                   <span className={styles.label}>Squadre playoff</span>
                   <input
                     className={styles.input}
-                    disabled={isEditMode && locked}
+                    disabled={isEditMode && locked && !canEditFinalPhaseConfiguration}
                     min={2}
                     onChange={(event) => {
                       updateForm((current) => ({
@@ -2111,10 +2170,26 @@ function TournamentCreationWizard({
                 </label>
 
                 <label className={styles.field}>
+                  <span className={styles.label}>Nome fase playoff</span>
+                  <input
+                    className={styles.input}
+                    disabled={isEditMode && locked && !canEditFinalPhaseConfiguration}
+                    onChange={(event) => {
+                      updateForm((current) => ({
+                        ...current,
+                        playoffLabel: event.target.value
+                      }));
+                    }}
+                    placeholder="Playoff"
+                    value={form.playoffLabel}
+                  />
+                </label>
+
+                <label className={styles.field}>
                   <span className={styles.label}>Squadre playout</span>
                   <input
                     className={styles.input}
-                    disabled={isEditMode && locked}
+                    disabled={isEditMode && locked && !canEditFinalPhaseConfiguration}
                     min={2}
                     onChange={(event) => {
                       updateForm((current) => ({
@@ -2124,6 +2199,22 @@ function TournamentCreationWizard({
                     }}
                     type="number"
                     value={form.playoutTeamsCount}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Nome fase playout</span>
+                  <input
+                    className={styles.input}
+                    disabled={isEditMode && locked && !canEditFinalPhaseConfiguration}
+                    onChange={(event) => {
+                      updateForm((current) => ({
+                        ...current,
+                        playoutLabel: event.target.value
+                      }));
+                    }}
+                    placeholder="Playout"
+                    value={form.playoutLabel}
                   />
                 </label>
               </div>
@@ -2313,7 +2404,7 @@ function TournamentCreationWizard({
                 <dt>Formula</dt>
                 <dd>
                   {form.format === 'group_playoff_playout'
-                    ? 'Girone + eliminazione diretta'
+                    ? 'Girone + fasi finali'
                     : tournamentFormatLabels[form.format]}
                 </dd>
               </div>
